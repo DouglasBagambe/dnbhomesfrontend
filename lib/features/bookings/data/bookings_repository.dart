@@ -1,0 +1,108 @@
+import 'dart:math';
+import '../../../core/network/api_client.dart';
+
+class ViewingRequestInput {
+  const ViewingRequestInput({
+    required this.propertyId,
+    required this.guestName,
+    required this.guestEmail,
+    required this.guestPhone,
+    required this.scheduledAt,
+    this.duration = 60,
+    this.notes,
+  });
+  final String propertyId, guestName, guestEmail, guestPhone;
+  final DateTime scheduledAt;
+  final int duration;
+  final String? notes;
+  void validate() {
+    if (guestName.trim().length < 2)
+      throw const ApiFailure(
+        ApiFailureKind.validation,
+        'Enter your full name.',
+      );
+    if (!guestEmail.contains('@'))
+      throw const ApiFailure(
+        ApiFailureKind.validation,
+        'Enter a valid email address.',
+      );
+    if (guestPhone.replaceAll(RegExp(r'\D'), '').length < 9)
+      throw const ApiFailure(
+        ApiFailureKind.validation,
+        'Enter a valid phone number.',
+      );
+    if (!scheduledAt.isAfter(DateTime.now()))
+      throw const ApiFailure(
+        ApiFailureKind.validation,
+        'Choose a future date and time.',
+      );
+  }
+}
+
+class ViewingRequest {
+  const ViewingRequest({
+    required this.id,
+    required this.reference,
+    required this.propertyId,
+    required this.scheduledAt,
+    required this.status,
+    required this.guestName,
+    required this.guestEmail,
+    required this.guestPhone,
+  });
+  final String id,
+      reference,
+      propertyId,
+      status,
+      guestName,
+      guestEmail,
+      guestPhone;
+  final DateTime scheduledAt;
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'reference': reference,
+        'propertyId': propertyId,
+        'scheduledAt': scheduledAt.toIso8601String(),
+        'status': status,
+        'guestName': guestName,
+        'guestEmail': guestEmail,
+        'guestPhone': guestPhone,
+      };
+  factory ViewingRequest.fromJson(Map<String, dynamic> j) => ViewingRequest(
+        id: j['_id'] as String? ?? j['id'] as String? ?? '',
+        reference: j['reference'] as String? ?? '',
+        propertyId: j['property'] is String
+            ? j['property'] as String
+            : j['propertyId'] as String? ?? '',
+        scheduledAt: DateTime.parse(j['scheduledAt'] as String),
+        status: j['status'] as String? ?? 'pending',
+        guestName: j['guestName'] as String? ?? '',
+        guestEmail: j['guestEmail'] as String? ?? '',
+        guestPhone: j['guestPhone'] as String? ?? '',
+      );
+}
+
+class BookingsRepository {
+  BookingsRepository(this._api);
+  final ApiClient _api;
+  Future<ViewingRequest> requestViewing(ViewingRequestInput input) async {
+    input.validate();
+    final key =
+        '${input.propertyId}-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
+    final json = await _api.postJson(
+      '/bookings',
+      {
+        'property': input.propertyId,
+        'guestName': input.guestName.trim(),
+        'guestEmail': input.guestEmail.trim(),
+        'guestPhone': input.guestPhone.trim(),
+        'scheduledAt': input.scheduledAt.toUtc().toIso8601String(),
+        'duration': input.duration,
+        if (input.notes?.trim().isNotEmpty == true)
+          'notes': input.notes!.trim(),
+      },
+      headers: {'Idempotency-Key': key},
+    );
+    return ViewingRequest.fromJson(json['data'] as Map<String, dynamic>);
+  }
+}

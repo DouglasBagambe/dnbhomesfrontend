@@ -1,16 +1,22 @@
-# rent_app
+# Homes
 
-A new Flutter project.
+Flutter consumer property application operated by dnb Homes.
 
-## Getting Started
+## Environments
 
-This project is a starting point for a Flutter application.
+```bash
+flutter run --flavor development --dart-define=HOMES_ENV=development --dart-define=HOMES_API_URL=http://10.0.2.2:3000/api/v1
+flutter build appbundle --release --flavor production --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL=https://api.example.com/api/v1
+```
 
-A few resources to get you started if this is your first Flutter project:
+Production API URLs, Sentry DSNs, and PostHog keys must be supplied using `--dart-define`; none are committed.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## Android signing
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Create an upload keystore outside the repository. Copy `android/key.properties.example` to `android/key.properties`, use an absolute keystore path, and never commit either file or credentials. Without `key.properties`, Gradle can create an unsigned release bundle for CI validation but it cannot be uploaded to Play.
+
+Android App Links are prepared for `https://dnbhomes.com/properties/*`. The website must publish `/.well-known/assetlinks.json` containing `com.nilebitlabs.dnbhomes` and the final Play signing certificate fingerprint before verified links work.
+
+## Telemetry
+
+Optional Sentry/PostHog configuration boundaries exist in `lib/core/telemetry`. Add the SDK packages and consent controls when production keys and privacy approval are available.

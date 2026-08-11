@@ -1,0 +1,4 @@
+storePassword=replace-me
+keyPassword=replace-me
+keyAlias=homes
+storeFile=/absolute/path/to/homes-upload-keystore.jks

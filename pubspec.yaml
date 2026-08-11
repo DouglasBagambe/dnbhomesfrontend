@@ -1,5 +1,5 @@
-name: domify
-description: A modern real estate platform for Uganda.
+name: homes
+description: Homes property discovery for Uganda.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: "none"
@@ -46,23 +46,9 @@ dependencies:
   carousel_slider: ^4.2.1
   shimmer: ^3.0.0
   flutter_staggered_grid_view: ^0.7.0
-  flutter_rating_bar: ^4.0.1
-  image_picker: ^1.0.5
-  path_provider: ^2.1.1
-  permission_handler: ^11.0.1
   connectivity_plus: ^5.0.2
-  flutter_local_notifications: ^19.0.0
-  timezone: ^0.10.1
   flutter_native_splash: ^2.3.8
   flutter_launcher_icons: ^0.13.1
-  flutter_dotenv: ^5.1.0
-  logger: ^2.0.2+1
-  dio: ^5.4.0
-  json_annotation: ^4.8.1
-  freezed_annotation: ^2.4.1
-  json_serializable: ^6.7.1
-  freezed: ^2.4.5
-  build_runner: ^2.4.7
   share_plus: ^13.2.0
 
 # The following adds the Cupertino Icons font to your application.
@@ -78,8 +64,6 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.1
   mockito: ^5.4.3
-  flutter_launcher_icons: ^0.13.1
-  flutter_native_splash: ^2.3.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -132,7 +116,13 @@ flutter_icons:
     generate: false
 
 flutter_native_splash:
-  color: "#FFFFFF"
-  image: assets/images/splash.png
+  color: "#F7F8F6"
+  color_dark: "#101512"
+  image: assets/images/dnblogolight-removebg-preview.png
+  image_dark: assets/images/dnblogdark-removebg-preview.png
   android: true
   ios: true
+  android_12:
+    color: "#F7F8F6"
+    color_dark: "#101512"
+    image: assets/icons/dnb_icon_foreground.png
