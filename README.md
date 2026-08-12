@@ -2,6 +2,8 @@
 
 Flutter consumer property application operated by dnb Homes.
 
+The app uses the official supplied black/white mark for launcher, adaptive icon, splash, and the theme-aware Home header. The retired gradient W/roof assets have been removed.
+
 ## Environments
 
 ```bash
@@ -10,6 +12,8 @@ flutter build appbundle --release --flavor production --dart-define=HOMES_ENV=pr
 ```
 
 Production API URLs, Sentry DSNs, and PostHog keys must be supplied using `--dart-define`; none are committed.
+
+Run `flutter analyze`, `flutter test`, and the production `flutter build appbundle` command on a workstation with Flutter already installed. The final completion workstation did not contain a Flutter SDK, so no large SDK download was performed.
 
 ## Android signing
 

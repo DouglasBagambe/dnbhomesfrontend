@@ -31,7 +31,7 @@ class BookingsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Bookings',
+                    'Viewing requests',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 5),
@@ -83,7 +83,16 @@ class BookingsScreen extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         final item = items[i];
-        return Card(
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            border: Border(
+              left: BorderSide(
+                width: 3,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(

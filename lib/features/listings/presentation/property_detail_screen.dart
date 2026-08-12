@@ -385,11 +385,11 @@ class _Facts extends StatelessWidget {
     final facts = <(IconData, String?)>[
       (
         Icons.bed_outlined,
-        item.bedrooms == null ? null : '${item.bedrooms} bedrooms'
+        (item.bedrooms ?? 0) <= 0 ? null : '${item.bedrooms} bedrooms'
       ),
       (
         Icons.bathtub_outlined,
-        item.bathrooms == null ? null : '${item.bathrooms} bathrooms'
+        (item.bathrooms ?? 0) <= 0 ? null : '${item.bathrooms} bathrooms'
       ),
       (
         Icons.square_foot_outlined,

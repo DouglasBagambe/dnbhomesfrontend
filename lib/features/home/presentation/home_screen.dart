@@ -72,9 +72,11 @@ class _HomeScreenState extends State<HomeScreen> {
             if (loading)
               const SliverToBoxAdapter(child: _LoadingHome())
             else if (failure != null)
-              SliverFillRemaining(
-                  child:
-                      AppErrorState(message: failure!.message, onRetry: load))
+              SliverToBoxAdapter(
+                  child: SizedBox(
+                      height: 280,
+                      child: AppErrorState(
+                          message: failure!.message, onRetry: load)))
             else
               ..._content()
           ])));
@@ -87,8 +89,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 Theme.of(context).brightness == Brightness.dark
                     ? 'assets/images/dnblogdark-removebg-preview.svg'
                     : 'assets/images/dnblogolight-removebg-preview.svg',
-                width: 58,
-                height: 42)),
+                width: 34,
+                height: 34)),
         const Spacer(),
         IconButton(
             tooltip: 'Settings',
@@ -124,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => DiscoverScreen(initialQuery: query))))),
-      _section('Featured Properties', featured),
-      _section('Recommended For You', recommended,
+      _section('Featured homes', featured),
+      _section('Popular right now', recommended,
           subtitle: 'Popular, recently published verified listings'),
       SliverToBoxAdapter(
           child: _Locations(
@@ -135,8 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   MaterialPageRoute(
                       builder: (_) => DiscoverScreen(
                           initialQuery: ListingQuery(area: area)))))),
-      _section('Trending This Week', recommended),
-      _section('Latest Listings', latest),
+      _section('Trending this week', recommended),
+      _section('Fresh on Homes', latest),
       const SliverPadding(padding: EdgeInsets.only(bottom: 110))
     ];
   }
@@ -211,7 +213,14 @@ class _Hero extends StatelessWidget {
   final ValueChanged<Property> onTap;
   @override
   Widget build(BuildContext context) {
-    if (items.isEmpty) return const SizedBox.shrink();
+    if (items.isEmpty) {
+      return const SizedBox(
+          height: 170,
+          child: AppEmptyState(
+              icon: Icons.home_work_outlined,
+              title: 'Properties are on the way',
+              message: 'Search Homes or try again when you are connected.'));
+    }
     return SizedBox(
         height: 270,
         child: PageView.builder(
@@ -258,7 +267,7 @@ class _Hero extends StatelessWidget {
                                               : 'New to Homes',
                                           style: const TextStyle(
                                               color: Colors.white70,
-                                              fontWeight: FontWeight.w700)),
+                                              fontWeight: FontWeight.w600)),
                                       const SizedBox(height: 6),
                                       Text(item.title,
                                           maxLines: 2,
@@ -267,7 +276,7 @@ class _Hero extends StatelessWidget {
                                               color: Colors.white,
                                               fontSize: 24,
                                               height: 1.15,
-                                              fontWeight: FontWeight.w700))
+                                              fontWeight: FontWeight.w600))
                                     ]))
                           ]))));
             }));
@@ -394,7 +403,7 @@ class _Locations extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Popular Locations',
+        Text('Popular locations',
             style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
         Wrap(

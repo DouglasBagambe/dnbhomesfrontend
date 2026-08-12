@@ -43,12 +43,12 @@ class _AppShellState extends State<AppShell> {
           NavigationDestination(
             icon: Icon(Icons.favorite_outline),
             selectedIcon: Icon(Icons.favorite),
-            label: 'Favorites',
+            label: 'Saved',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
-            label: 'Bookings',
+            label: 'Viewings',
           ),
         ],
       ),

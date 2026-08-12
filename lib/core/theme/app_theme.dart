@@ -6,28 +6,28 @@ abstract final class AppTheme {
         displaySmall: TextStyle(
           fontSize: 36,
           height: 1.1,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: -1.2,
           color: color,
         ),
         headlineMedium: TextStyle(
           fontSize: 28,
           height: 1.15,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: -.6,
           color: color,
         ),
         headlineSmall: TextStyle(
           fontSize: 22,
           height: 1.2,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           letterSpacing: -.3,
           color: color,
         ),
         titleLarge: TextStyle(
           fontSize: 19,
           height: 1.25,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: color,
         ),
         titleMedium: TextStyle(
@@ -42,7 +42,7 @@ abstract final class AppTheme {
         labelLarge: TextStyle(
           fontSize: 14,
           height: 1.2,
-          fontWeight: FontWeight.w700,
+          fontWeight: FontWeight.w600,
           color: color,
         ),
       );
@@ -97,7 +97,7 @@ abstract final class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(color: line),
+          side: BorderSide(color: line.withValues(alpha: .72)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -129,9 +129,9 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: const Size(48, 52),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(10),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
       chipTheme: ChipThemeData(

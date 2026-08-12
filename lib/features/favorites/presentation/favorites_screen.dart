@@ -67,7 +67,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-            child: Text('Favorites',
+            child: Text('Saved homes',
                 style: Theme.of(context).textTheme.headlineMedium)),
         Expanded(
             child: loading
@@ -79,9 +79,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     : items.isEmpty
                         ? const AppEmptyState(
                             icon: Icons.favorite_outline,
-                            title: 'No saved properties',
+                            title: 'No saved homes',
                             message:
-                                'Tap the heart on a property to keep it here. Favorites are stored on this device.')
+                                'Save homes you want to come back to. Saved homes stay on this device.')
                         : ListView.separated(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
                             itemCount: items.length,

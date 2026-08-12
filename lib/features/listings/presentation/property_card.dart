@@ -129,8 +129,8 @@ class PropertyCard extends StatelessWidget {
       );
   Widget _details(BuildContext context) {
     final facts = [
-      if (property.bedrooms != null) '${property.bedrooms} beds',
-      if (property.bathrooms != null) '${property.bathrooms} baths',
+      if ((property.bedrooms ?? 0) > 0) '${property.bedrooms} beds',
+      if ((property.bathrooms ?? 0) > 0) '${property.bathrooms} baths',
       if (property.size != null)
         '${property.size!.round()} ${property.sizeUnit}',
     ];
