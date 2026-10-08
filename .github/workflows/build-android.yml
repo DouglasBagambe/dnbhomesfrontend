@@ -1,26 +1,32 @@
 name: Build Homes Android
 on:
   push:
-    branches: [main]
+  pull_request:
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: "17" }
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;35.0.0" "ndk;27.0.12077973"
       - uses: subosito/flutter-action@v2
         with: { flutter-version: "3.38.1", channel: stable, cache: true }
-      - run: flutter pub get
+      - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test
-      - name: Build unsigned production AAB
+      - run: flutter build apk --debug --flavor development --dart-define=HOMES_ENV=development --dart-define=HOMES_API_URL=http://10.0.2.2:3000/api/v1
+      - name: Build unsigned non-runnable production validation AAB
         env:
-          HOMES_API_URL: ${{ secrets.HOMES_API_URL }}
-        run: flutter build appbundle --release --flavor production --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL="$HOMES_API_URL"
+          HOMES_BUILD_PROFILE: local
+        run: flutter build appbundle --release --flavor production --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL=http://127.0.0.1:3000/api/v1 --dart-define=HOMES_BUILD_VALIDATION=true
+      - run: python3 scripts/check-android-bundle.py
       - uses: actions/upload-artifact@v4
         with:
-          name: homes-production-aab
+          name: homes-unsigned-validation-only
           path: build/app/outputs/bundle/productionRelease/app-production-release.aab
