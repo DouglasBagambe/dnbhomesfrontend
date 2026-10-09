@@ -9,7 +9,15 @@ class FilterSheet extends StatefulWidget {
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        builder: (_) => FilterSheet(initial: query),
+        builder: (context) => Padding(
+          padding:
+              EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: MediaQuery.removeViewInsets(
+            context: context,
+            removeBottom: true,
+            child: FilterSheet(initial: query),
+          ),
+        ),
       );
   @override
   State<FilterSheet> createState() => _FilterSheetState();
@@ -18,12 +26,14 @@ class FilterSheet extends StatefulWidget {
 class _FilterSheetState extends State<FilterSheet> {
   late String? purpose = widget.initial.purpose,
       type = widget.initial.type,
-      area = widget.initial.area;
+      area = widget.initial.area,
+      district = widget.initial.district;
   late double? min = widget.initial.minPrice, max = widget.initial.maxPrice;
   late int? beds = widget.initial.bedrooms, baths = widget.initial.bathrooms;
   late bool verified = widget.initial.verified ?? false;
   late ListingSort sort = widget.initial.sort;
-  final amenities = <String>{};
+  late final amenities = widget.initial.amenities.toSet();
+  int reset = 0;
   @override
   Widget build(BuildContext context) => FractionallySizedBox(
         heightFactor: .94,
@@ -41,8 +51,12 @@ class _FilterSheetState extends State<FilterSheet> {
             ],
           ),
           body: ListView(
+            key: ValueKey(reset),
             padding: const EdgeInsets.all(20),
             children: [
+              Text('Property',
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 16),
               section(
                 'Purpose',
                 ['rent', 'sale', 'short_stay'],
@@ -70,11 +84,16 @@ class _FilterSheetState extends State<FilterSheet> {
                 initialValue: area,
                 onChanged: (v) => area = v,
                 decoration:
-                    const InputDecoration(hintText: 'Area or neighborhood'),
+                    const InputDecoration(labelText: 'Area or neighbourhood'),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 12),
+              TextFormField(
+                  initialValue: district,
+                  onChanged: (v) => district = v,
+                  decoration: const InputDecoration(labelText: 'District')),
+              const SizedBox(height: 24),
               Text(
-                'Price range (UGX)',
+                'Price & space (UGX)',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
@@ -103,7 +122,8 @@ class _FilterSheetState extends State<FilterSheet> {
               _counter('Bedrooms', beds, (v) => setState(() => beds = v)),
               _counter('Bathrooms', baths, (v) => setState(() => baths = v)),
               const SizedBox(height: 18),
-              Text('Amenities', style: Theme.of(context).textTheme.titleMedium),
+              Text('Details · Amenities',
+                  style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -225,7 +245,8 @@ class _FilterSheetState extends State<FilterSheet> {
         ),
       );
   void clear() => setState(() {
-        purpose = type = area = null;
+        reset++;
+        purpose = type = area = district = null;
         min = max = null;
         beds = baths = null;
         verified = false;
@@ -235,6 +256,15 @@ class _FilterSheetState extends State<FilterSheet> {
   void apply() => Navigator.pop(
         context,
         ListingQuery(
+          q: reset == 0 ? widget.initial.q : null,
+          country: reset == 0 ? widget.initial.country : null,
+          region: reset == 0 ? widget.initial.region : null,
+          featured: reset == 0 ? widget.initial.featured : null,
+          latitude: reset == 0 ? widget.initial.latitude : null,
+          longitude: reset == 0 ? widget.initial.longitude : null,
+          radius: reset == 0 ? widget.initial.radius : null,
+          limit: widget.initial.limit,
+          district: district?.trim().isEmpty == true ? null : district?.trim(),
           purpose: purpose,
           type: type,
           area: area?.trim().isEmpty == true ? null : area?.trim(),

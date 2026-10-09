@@ -2,9 +2,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:homes/features/compare/compare_controller.dart';
 import 'package:homes/features/favorites/favorites_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:homes/features/search/recent_searches.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
+  test('first recent search persists, deduplicates and survives reload',
+      () async {
+    final searches = RecentSearches();
+    await searches.add(' Ntinda ');
+    await searches.add('Kampala');
+    await searches.add('ntinda');
+    expect(await RecentSearches().getAll(), ['ntinda', 'Kampala']);
+    for (var i = 0; i < 8; i++) {
+      await searches.add('Area $i');
+    }
+    expect((await searches.getAll()).length, 6);
+    await searches.clear();
+    expect(await searches.getAll(), isEmpty);
+    await searches.add('Kampala');
+    expect(await searches.getAll(), ['Kampala']);
+  });
   test('compare remains capped at two', () async {
     final controller = CompareController();
     await Future<void>.delayed(Duration.zero);

@@ -95,6 +95,30 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     load();
   }
 
+  void removeFilter(String key) {
+    query = ListingQuery(
+        q: key == 'q' ? null : query.q,
+        area: key == 'area' ? null : query.area,
+        district: key == 'district' ? null : query.district,
+        purpose: key == 'purpose' ? null : query.purpose,
+        type: key == 'type' ? null : query.type,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        bedrooms: query.bedrooms,
+        bathrooms: query.bathrooms,
+        amenities: query.amenities,
+        verified: query.verified,
+        featured: query.featured,
+        country: query.country,
+        region: query.region,
+        latitude: query.latitude,
+        longitude: query.longitude,
+        radius: query.radius,
+        limit: query.limit,
+        sort: query.sort);
+    load();
+  }
+
   @override
   Widget build(BuildContext context) => SafeArea(
         child: CustomScrollView(
@@ -117,7 +141,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             ),
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 54,
+                height:
+                    54 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
                 child: ListView.separated(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
@@ -152,7 +177,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: Row(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     OutlinedButton.icon(
                       onPressed: () async {
@@ -180,7 +208,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       icon: const Icon(Icons.swap_vert),
                       label: const Text('Sort'),
                     ),
-                    const Spacer(),
                     Text(
                       '$total results',
                       style: Theme.of(
@@ -194,6 +221,26 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ),
               ),
             ),
+            if ([query.q, query.area, query.district, query.purpose, query.type]
+                .any((value) => value?.isNotEmpty == true))
+              SliverToBoxAdapter(
+                  child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                      child: Wrap(spacing: 8, runSpacing: 8, children: [
+                        for (final entry in {
+                          'q': query.q,
+                          'area': query.area,
+                          'district': query.district,
+                          'purpose': query.purpose,
+                          'type': query.type
+                        }.entries)
+                          if (entry.value?.isNotEmpty == true)
+                            InputChip(
+                                label: Text(entry.value!.replaceAll('_', ' ')),
+                                deleteButtonTooltipMessage:
+                                    'Remove ${entry.key} filter',
+                                onDeleted: () => removeFilter(entry.key)),
+                      ]))),
             if (loading)
               SliverPadding(
                 padding: const EdgeInsets.all(16),
@@ -220,41 +267,58 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             else
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
-                sliver: SliverGrid.builder(
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: MediaQuery.sizeOf(context).width >= 720
-                        ? 3
-                        : MediaQuery.sizeOf(context).width >= 520
-                            ? 2
-                            : 1,
-                    childAspectRatio:
-                        MediaQuery.sizeOf(context).width >= 520 ? .72 : 1.05,
-                    crossAxisSpacing: 14,
-                    mainAxisSpacing: 14,
-                  ),
-                  itemCount: items.length + (loadingMore ? 1 : 0),
-                  itemBuilder: (_, i) {
-                    if (i == items.length)
-                      return const Center(child: CircularProgressIndicator());
-                    final item = items[i];
-                    return PropertyCard(
-                      property: item,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => PropertyDetailScreen(
-                            idOrSlug: item.slug,
-                            initial: item,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                sliver: SliverLayoutBuilder(builder: (context, constraints) {
+                  final columns = constraints.crossAxisExtent >= 720
+                      ? 3
+                      : constraints.crossAxisExtent >= 520
+                          ? 2
+                          : 1;
+                  final rows = (items.length / columns).ceil();
+                  return SliverList.separated(
+                    itemCount: rows + (loadingMore ? 1 : 0),
+                    separatorBuilder: (_, __) => const SizedBox(height: 24),
+                    itemBuilder: (context, row) {
+                      if (row == rows) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var column = 0; column < columns; column++) ...[
+                            if (column > 0) const SizedBox(width: 14),
+                            Expanded(
+                                child: row * columns + column < items.length
+                                    ? _card(context, row * columns + column)
+                                    : const SizedBox.shrink()),
+                          ],
+                        ],
+                      );
+                    },
+                  );
+                }),
               ),
           ],
         ),
       );
+
+  Widget _card(BuildContext context, int i) {
+    if (i == items.length) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final item = items[i];
+    return PropertyCard(
+      property: item,
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PropertyDetailScreen(
+            idOrSlug: item.slug,
+            initial: item,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _SortSheet extends StatelessWidget {

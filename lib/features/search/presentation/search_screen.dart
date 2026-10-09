@@ -94,19 +94,23 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: TextField(
-            controller: controller,
-            autofocus: true,
-            onChanged: changed,
-            onSubmitted: discover,
-            decoration: const InputDecoration(
-              hintText: 'Property, location or agent',
-              border: InputBorder.none,
-            ),
-          ),
-        ),
-        body: _body(),
+        appBar: AppBar(title: const Text('Search Homes')),
+        body: Column(children: [
+          Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: TextField(
+                controller: controller,
+                autofocus: true,
+                onChanged: changed,
+                onSubmitted: discover,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                    labelText: 'Search',
+                    hintText: 'Area, neighbourhood or property',
+                    prefixIcon: Icon(Icons.search)),
+              )),
+          Expanded(child: _body()),
+        ]),
       );
 
   Widget _body() {
@@ -187,19 +191,9 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 26),
         ],
-        Text('Popular locations',
-            style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 10),
-        ...['Kampala', 'Ntinda', 'Kololo', 'Muyenga', 'Entebbe'].map(
-          (item) => ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.location_on_outlined),
-            title: Text(item),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-            onTap: () => discover(item),
-          ),
-        ),
-        const SizedBox(height: 18),
+        const Text(
+            'Search an area, neighbourhood or property. Recent searches stay on this device.'),
+        const SizedBox(height: 24),
         Text('Browse categories',
             style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 10),

@@ -7,7 +7,7 @@ class RecentSearches {
   Future<void> add(String value) async {
     final text = value.trim();
     if (text.isEmpty) return;
-    final items = await getAll();
+    final items = List<String>.of(await getAll());
     items.removeWhere((item) => item.toLowerCase() == text.toLowerCase());
     items.insert(0, text);
     await (await SharedPreferences.getInstance()).setStringList(

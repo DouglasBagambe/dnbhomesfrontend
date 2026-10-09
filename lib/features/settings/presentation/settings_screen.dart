@@ -20,7 +20,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(switch (theme.mode) {
               ThemeMode.light => 'Light',
               ThemeMode.dark => 'Dark',
-              _ => 'Use device setting',
+              _ => 'System',
             }),
             onTap: () => showModalBottomSheet(
               context: context,
@@ -40,7 +40,7 @@ class SettingsScreen extends StatelessWidget {
                             title: Text(switch (mode) {
                               ThemeMode.light => 'Light',
                               ThemeMode.dark => 'Dark',
-                              _ => 'Use device setting',
+                              _ => 'System',
                             }),
                           ),
                         )

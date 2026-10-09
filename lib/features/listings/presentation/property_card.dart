@@ -25,11 +25,11 @@ class PropertyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = layout == PropertyCardLayout.compact;
     final horizontal = layout == PropertyCardLayout.horizontal;
-    final image = _image(
-      context,
-      horizontal ? 164 : double.infinity,
-      compact ? 120 : 190,
-    );
+    final image = compact
+        ? _image(context, 108, 154)
+        : LayoutBuilder(
+            builder: (context, constraints) => _image(
+                context, constraints.maxWidth, constraints.maxWidth * .75));
     final details = _details(context);
     final card = InkWell(
       onTap: onTap,
@@ -54,7 +54,7 @@ class PropertyCard extends StatelessWidget {
       button: true,
       label:
           '${property.title}, ${formatMoney(property.price)}, ${property.location.shortLabel}',
-      child: SizedBox(width: horizontal ? 290 : null, child: card),
+      child: SizedBox(width: horizontal ? 280 : null, child: card),
     );
   }
 
@@ -63,15 +63,24 @@ class PropertyCard extends StatelessWidget {
           SizedBox(
             width: width,
             height: height,
-            child: property.imageUrl == null
-                ? _placeholder(context)
-                : CachedNetworkImage(
-                    imageUrl: property.imageUrl!,
-                    fit: BoxFit.cover,
-                    memCacheWidth: 800,
-                    placeholder: (_, __) => _placeholder(context),
-                    errorWidget: (_, __, ___) => _placeholder(context),
-                  ),
+            child: Semantics(
+              image: true,
+              excludeSemantics: true,
+              label: property.cover?.alt ??
+                  (property.media.isNotEmpty
+                      ? property.media.first.alt
+                      : null) ??
+                  property.title,
+              child: property.imageUrl == null
+                  ? _placeholder(context)
+                  : CachedNetworkImage(
+                      imageUrl: property.imageUrl!,
+                      fit: BoxFit.cover,
+                      memCacheWidth: 800,
+                      placeholder: (_, __) => _placeholder(context),
+                      errorWidget: (_, __, ___) => _placeholder(context),
+                    ),
+            ),
           ),
           Positioned(
             top: 10,
@@ -88,33 +97,25 @@ class PropertyCard extends StatelessWidget {
               ),
             ),
           ),
-          if (property.verified)
-            Positioned(
-              left: 10,
-              bottom: 10,
+          Positioned(
+              left: 12,
+              bottom: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.verified, size: 15, color: AppColors.brand),
-                    SizedBox(width: 4),
-                    Text(
-                      'Verified',
-                      style: TextStyle(
-                        color: AppColors.ink,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                      color: AppColors.deep.withValues(alpha: .9),
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Text(
+                      switch (property.purpose) {
+                        'sale' => 'For sale',
+                        'short_stay' => 'Short stay',
+                        _ => 'For rent'
+                      },
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600)))),
         ],
       );
   Widget _placeholder(BuildContext context) => ColoredBox(
@@ -150,32 +151,6 @@ class PropertyCard extends StatelessWidget {
                       ),
                 ),
               ),
-              if (showCompare)
-                Consumer<CompareController>(
-                  builder: (_, compare, __) => IconButton.filledTonal(
-                    tooltip: compare.contains(property.id)
-                        ? 'Remove from compare'
-                        : 'Add to compare',
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () async {
-                      final added = await compare.toggle(property.id);
-                      if (!added && context.mounted)
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Compare is limited to two properties.',
-                            ),
-                          ),
-                        );
-                    },
-                    icon: Icon(
-                      compare.contains(property.id)
-                          ? Icons.balance
-                          : Icons.balance_outlined,
-                      size: 19,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 5),
@@ -208,6 +183,15 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
+          if (property.verified) ...[
+            const SizedBox(height: 8),
+            Row(children: [
+              Icon(Icons.verified_outlined,
+                  size: 16, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 4),
+              const Text('Verified', style: TextStyle(fontSize: 12))
+            ])
+          ],
           if (facts.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
@@ -217,6 +201,39 @@ class PropertyCard extends StatelessWidget {
               ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
+          Row(children: [
+            const Spacer(),
+            if (showCompare)
+              Consumer<CompareController>(
+                builder: (_, compare, __) => IconButton(
+                  tooltip: compare.contains(property.id)
+                      ? 'Remove from compare'
+                      : 'Add to compare',
+                  constraints:
+                      const BoxConstraints(minWidth: 48, minHeight: 48),
+                  onPressed: () async {
+                    final added = await compare.toggle(property.id);
+                    if (!added && context.mounted)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Compare is limited to two properties.',
+                          ),
+                        ),
+                      );
+                  },
+                  icon: Icon(
+                    compare.contains(property.id)
+                        ? Icons.balance
+                        : Icons.balance_outlined,
+                    size: 19,
+                    color: compare.contains(property.id)
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+          ]),
         ],
       ),
     );
@@ -231,6 +248,7 @@ class PropertyCard extends StatelessWidget {
   }) =>
       Semantics(
         button: true,
+        toggled: selected,
         label: label,
         child: Material(
           color: Theme.of(context).colorScheme.surface.withValues(alpha: .94),

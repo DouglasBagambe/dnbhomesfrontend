@@ -45,6 +45,8 @@ class BookingsScreen extends StatelessWidget {
               ),
             ),
             const TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
               tabs: [
                 Tab(text: 'Upcoming / Pending'),
                 Tab(text: 'Past / Cancelled'),
@@ -106,7 +108,9 @@ class BookingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
-                    Chip(label: Text(titleCase(item.status))),
+                    Text(titleCase(item.status),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.primary)),
                   ],
                 ),
                 const SizedBox(height: 8),

@@ -37,6 +37,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   ApiFailure? failure;
   bool loading = true;
   List<Property> similar = [];
+  int imageIndex = 0;
 
   @override
   void initState() {
@@ -101,11 +102,22 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
     final images = item.media.where((media) => media.type == 'image').toList();
     return Scaffold(
+      bottomNavigationBar: SafeArea(
+          child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              child: FilledButton.icon(
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => ViewingRequestScreen(property: item))),
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: const Text('Request a viewing'),
+              ))),
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
-            expandedHeight: 330,
+            expandedHeight: MediaQuery.sizeOf(context).height < 500 ? 240 : 360,
             leading:
                 _circle(Icons.arrow_back, 'Back', () => Navigator.pop(context)),
             actions: [
@@ -121,14 +133,44 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                           Theme.of(context).colorScheme.surfaceContainerHighest,
                       child: const Icon(Icons.home_work_outlined, size: 64),
                     )
-                  : PageView.builder(
-                      itemCount: images.length,
-                      itemBuilder: (_, index) => CachedNetworkImage(
-                        imageUrl: images[index].url,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 1400,
+                  : Stack(fit: StackFit.expand, children: [
+                      PageView.builder(
+                        onPageChanged: (index) =>
+                            setState(() => imageIndex = index),
+                        itemCount: images.length,
+                        itemBuilder: (_, index) => Semantics(
+                          image: true,
+                          excludeSemantics: true,
+                          label: images[index].alt?.trim().isNotEmpty == true
+                              ? images[index].alt
+                              : '${item.title}, image ${index + 1} of ${images.length}',
+                          child: CachedNetworkImage(
+                            imageUrl: images[index].url,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 1400,
+                            errorWidget: (_, __, ___) => ColoredBox(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .surfaceContainerHighest,
+                                child: const Icon(Icons.home_work_outlined,
+                                    size: 48)),
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                          right: 20,
+                          bottom: 16,
+                          child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                  color: AppColors.deep.withValues(alpha: .9),
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: Text(
+                                  '${imageIndex + 1} / ${images.length}',
+                                  style:
+                                      const TextStyle(color: Colors.white)))),
+                    ]),
             ),
           ),
           SliverToBoxAdapter(
@@ -137,16 +179,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (item.verified)
-                    const Row(children: [
-                      Icon(Icons.verified, size: 18, color: AppColors.brand),
-                      SizedBox(width: 5),
-                      Text('Verified listing',
-                          style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.brand)),
-                    ]),
-                  const SizedBox(height: 8),
+                  Text(formatMoney(item.price),
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(
+                              color: Theme.of(context).colorScheme.primary)),
+                  const SizedBox(height: 16),
                   Text(item.title,
                       style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 8),
@@ -160,11 +199,19 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     ),
                   ]),
                   const SizedBox(height: 18),
-                  Text(
-                    formatMoney(item.price),
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary),
-                  ),
+                  if (item.verified)
+                    Row(children: [
+                      Icon(Icons.verified_outlined,
+                          size: 18,
+                          color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 5),
+                      Expanded(
+                          child: Text('Verified listing',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color:
+                                      Theme.of(context).colorScheme.primary))),
+                    ]),
                   if (item.publishedAt != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 5),
@@ -178,22 +225,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   const SizedBox(height: 22),
                   _Facts(item: item),
                   const SizedBox(height: 26),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) =>
-                                ViewingRequestScreen(property: item)),
-                      ),
-                      icon: const Icon(Icons.calendar_month_outlined),
-                      label: Text(item.purpose == 'short_stay'
-                          ? 'Request availability'
-                          : 'Request a viewing'),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
                   _contactButtons(item),
                   const SizedBox(height: 30),
                   _heading('About this property'),
@@ -272,7 +303,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     _heading('Similar properties'),
                     const SizedBox(height: 14),
                     SizedBox(
-                      height: 340,
+                      height: 520 *
+                          MediaQuery.textScalerOf(context)
+                              .scale(1)
+                              .clamp(1, 1.6),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: similar.length,
@@ -333,7 +367,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         padding: const EdgeInsets.all(6),
         child: Material(
           color: Theme.of(context).colorScheme.surface.withValues(alpha: .9),
-          shape: const CircleBorder(),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: IconButton(
             tooltip: tooltip,
             onPressed: onTap,
@@ -405,7 +440,7 @@ class _Facts extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Theme.of(context).dividerColor),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(

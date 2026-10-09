@@ -2,7 +2,10 @@
 
 Flutter consumer property application operated by dnb Homes.
 
-The app uses the official supplied black/white mark for launcher, adaptive icon, splash, and the theme-aware Home header. The retired gradient W/roof assets have been removed.
+The launcher, adaptive icon and splash retain the supplied black/white mark. The native V2 Home header uses the approved H. / HOMES consumer lockup. The retired gradient W/roof assets remain removed.
+
+V2 design scope, isolated test data, native checks and screenshots are recorded in
+[the Android V2 QA record](docs/V2_ANDROID_QA.md).
 
 ## Local toolchain
 

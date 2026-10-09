@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/tokens.dart';
@@ -85,12 +85,18 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(children: [
         Semantics(
             label: 'Homes',
-            child: SvgPicture.asset(
-                Theme.of(context).brightness == Brightness.dark
-                    ? 'assets/images/dnblogdark-removebg-preview.svg'
-                    : 'assets/images/dnblogolight-removebg-preview.svg',
-                width: 34,
-                height: 34)),
+            child: Row(children: [
+              Text('H.', style: Theme.of(context).textTheme.headlineMedium),
+              const SizedBox(width: 12),
+              Container(
+                  width: 1, height: 20, color: Theme.of(context).dividerColor),
+              const SizedBox(width: 12),
+              const Text('HOMES',
+                  style: TextStyle(
+                      fontSize: 13,
+                      letterSpacing: 1.4,
+                      fontWeight: FontWeight.w700)),
+            ])),
         const Spacer(),
         IconButton(
             tooltip: 'Settings',
@@ -115,30 +121,25 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const SearchScreen())))),
       SliverToBoxAdapter(
-          child: _QuickFilters(
-              onSelect: (query) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => DiscoverScreen(initialQuery: query))))),
-      SliverToBoxAdapter(
           child: _Browse(
               onSelect: (query) => Navigator.push(
                   context,
                   MaterialPageRoute(
                       builder: (_) => DiscoverScreen(initialQuery: query))))),
-      _section('Featured homes', featured),
-      _section('Popular right now', recommended,
-          subtitle: 'Popular, recently published verified listings'),
-      SliverToBoxAdapter(
-          child: _Locations(
-              items: locations.keys.take(6).toList(),
-              onTap: (area) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => DiscoverScreen(
-                          initialQuery: ListingQuery(area: area)))))),
-      _section('Trending this week', recommended),
-      _section('Fresh on Homes', latest),
+      if (featured.isNotEmpty) _section('Featured homes', featured),
+      if (recommended.isNotEmpty)
+        _section('Popular right now', recommended,
+            subtitle: 'Verified listings to explore'),
+      if (locations.isNotEmpty)
+        SliverToBoxAdapter(
+            child: _Locations(
+                items: locations.keys.take(6).toList(),
+                onTap: (area) => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => DiscoverScreen(
+                            initialQuery: ListingQuery(area: area)))))),
+      if (latest.isNotEmpty) _section('Fresh on Homes', latest),
       const SliverPadding(padding: EdgeInsets.only(bottom: 110))
     ];
   }
@@ -187,7 +188,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             ])),
                     const SizedBox(height: 12),
                     SizedBox(
-                        height: 340,
+                        height: 520 *
+                            MediaQuery.textScalerOf(context)
+                                .scale(1)
+                                .clamp(1, 1.6),
                         child: items.isEmpty
                             ? const AppEmptyState(
                                 icon: Icons.home_work_outlined,
@@ -207,80 +211,130 @@ class _HomeScreenState extends State<HomeScreen> {
                   ])));
 }
 
-class _Hero extends StatelessWidget {
+class _Hero extends StatefulWidget {
   const _Hero({required this.items, required this.onTap});
   final List<Property> items;
   final ValueChanged<Property> onTap;
   @override
-  Widget build(BuildContext context) {
-    if (items.isEmpty) {
-      return const SizedBox(
-          height: 170,
-          child: AppEmptyState(
-              icon: Icons.home_work_outlined,
-              title: 'Properties are on the way',
-              message: 'Search Homes or try again when you are connected.'));
-    }
-    return SizedBox(
-        height: 270,
-        child: PageView.builder(
-            controller: PageController(viewportFraction: .9),
-            itemCount: items.length,
-            itemBuilder: (_, index) {
-              final item = items[index];
-              return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: InkWell(
-                      onTap: () => onTap(item),
-                      borderRadius: BorderRadius.circular(AppRadius.xl),
-                      child: ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.xl),
-                          child: Stack(fit: StackFit.expand, children: [
-                            if (item.imageUrl != null)
-                              Image.network(item.imageUrl!,
-                                  fit: BoxFit.cover, cacheWidth: 1200)
-                            else
-                              ColoredBox(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHighest),
-                            const DecoratedBox(
-                                decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                  Colors.transparent,
-                                  Color(0xCC000000)
-                                ]))),
-                            Positioned(
-                                left: 22,
-                                right: 22,
-                                bottom: 22,
-                                child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                          item.featured
-                                              ? 'Featured home'
-                                              : 'New to Homes',
-                                          style: const TextStyle(
-                                              color: Colors.white70,
-                                              fontWeight: FontWeight.w600)),
-                                      const SizedBox(height: 6),
-                                      Text(item.title,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 24,
-                                              height: 1.15,
-                                              fontWeight: FontWeight.w600))
-                                    ]))
-                          ]))));
-            }));
-  }
+  State<_Hero> createState() => _HeroState();
+}
+
+class _HeroState extends State<_Hero> {
+  int page = 0;
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            child: SizedBox(
+              height:
+                  340 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 1.5),
+              child: widget.items.isEmpty
+                  ? Container(
+                      color:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.home_work_outlined, size: 36),
+                            const SizedBox(height: 24),
+                            Text('Find your place\nin Uganda.',
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    Theme.of(context).textTheme.displaySmall),
+                            const SizedBox(height: 16),
+                            const Text(
+                                'No published homes yet. Explore property types or check back for new listings.'),
+                          ]),
+                    )
+                  : Stack(fit: StackFit.expand, children: [
+                      PageView.builder(
+                          onPageChanged: (value) =>
+                              setState(() => page = value),
+                          itemCount: widget.items.length,
+                          itemBuilder: (_, index) {
+                            final item = widget.items[index];
+                            return Semantics(
+                                label: 'Open ${item.title}',
+                                button: true,
+                                child: InkWell(
+                                    onTap: () => widget.onTap(item),
+                                    child:
+                                        Stack(fit: StackFit.expand, children: [
+                                      if (item.imageUrl != null)
+                                        CachedNetworkImage(
+                                            imageUrl: item.imageUrl!,
+                                            fit: BoxFit.cover,
+                                            memCacheWidth: 1200,
+                                            errorWidget: (_, __, ___) =>
+                                                const ColoredBox(
+                                                    color: AppColors.deep))
+                                      else
+                                        const ColoredBox(color: AppColors.deep),
+                                      const DecoratedBox(
+                                          decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                  begin: Alignment.topCenter,
+                                                  end: Alignment.bottomCenter,
+                                                  colors: [
+                                            Color(0x66123D32),
+                                            Color(0xDD0B2A22)
+                                          ]))),
+                                      Padding(
+                                          padding: const EdgeInsets.all(24),
+                                          child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                    'PROPERTY DISCOVERY IN UGANDA',
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 11,
+                                                        letterSpacing: 1.2,
+                                                        fontWeight:
+                                                            FontWeight.w600)),
+                                                const SizedBox(height: 16),
+                                                Text(
+                                                    'Find your place\nin Uganda.',
+                                                    maxLines: 3,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .displaySmall
+                                                        ?.copyWith(
+                                                            color:
+                                                                Colors.white)),
+                                                const Spacer(),
+                                                Text(item.title,
+                                                    maxLines: 2,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w600)),
+                                                const SizedBox(height: 24),
+                                              ])),
+                                    ])));
+                          }),
+                      Positioned(
+                          right: 24,
+                          bottom: 16,
+                          child: Text('${page + 1} / ${widget.items.length}',
+                              style: const TextStyle(
+                                  color: Colors.white, fontSize: 12))),
+                    ]),
+            )),
+      );
 }
 
 class _SearchEntry extends StatelessWidget {
@@ -288,60 +342,26 @@ class _SearchEntry extends StatelessWidget {
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 10),
-      child: Semantics(
-          button: true,
-          label: 'Search properties, locations or agents',
-          child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Container(
-                  constraints: const BoxConstraints(minHeight: 66),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                  decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      border: Border.all(color: Theme.of(context).dividerColor),
-                      borderRadius: BorderRadius.circular(AppRadius.lg)),
-                  child: Row(children: [
-                    Icon(Icons.search,
-                        color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Expanded(
-                        child: Text('Search properties, locations or agents...',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyLarge
-                                ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant))),
-                    const Icon(Icons.arrow_forward)
-                  ])))));
-}
-
-class _QuickFilters extends StatelessWidget {
-  const _QuickFilters({required this.onSelect});
-  final ValueChanged<ListingQuery> onSelect;
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      ('Kampala', const ListingQuery(district: 'Kampala')),
-      ('House', const ListingQuery(type: 'house')),
-      ('Apartment', const ListingQuery(type: 'apartment')),
-      ('Under 500k', const ListingQuery(maxPrice: 500000)),
-      ('2 Bedrooms', const ListingQuery(bedrooms: 2))
-    ];
-    return SizedBox(
-        height: 56,
-        child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (_, i) => ActionChip(
-                label: Text(items[i].$1),
-                onPressed: () => onSelect(items[i].$2)),
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemCount: items.length));
-  }
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(children: [
+                  Icon(Icons.search,
+                      color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                      child: Text('Area, neighbourhood or property',
+                          style: Theme.of(context).textTheme.bodyMedium)),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 20),
+                ]))),
+      ));
 }
 
 class _Browse extends StatelessWidget {
@@ -362,35 +382,32 @@ class _Browse extends StatelessWidget {
         'Commercial',
         Icons.storefront_outlined,
         const ListingQuery(type: 'commercial')
-      )
+      ),
     ];
     return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+        padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Browse by type',
               style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 14),
-          SizedBox(
-              height: 102,
-              child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (_, i) => SizedBox(
-                      width: 105,
-                      child: OutlinedButton(
-                          onPressed: () => onSelect(items[i].$3),
-                          style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(AppRadius.md))),
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(items[i].$2),
-                                const SizedBox(height: 8),
-                                Text(items[i].$1, textAlign: TextAlign.center)
-                              ]))),
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemCount: items.length))
+          const SizedBox(height: 16),
+          Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: items
+                  .map((item) => TextButton.icon(
+                        onPressed: () => onSelect(item.$3),
+                        icon: Icon(item.$2, size: 20),
+                        label: Text(item.$1),
+                        style: TextButton.styleFrom(
+                            minimumSize: const Size(48, 52),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            backgroundColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12))),
+                      ))
+                  .toList()),
         ]));
   }
 }
@@ -401,20 +418,17 @@ class _Locations extends StatelessWidget {
   final ValueChanged<String> onTap;
   @override
   Widget build(BuildContext context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Popular locations',
+        Text('Explore locations',
             style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 12),
-        Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: items
-                .map((item) => ActionChip(
-                    avatar: const Icon(Icons.location_on_outlined, size: 18),
-                    label: Text(item),
-                    onPressed: () => onTap(item)))
-                .toList())
+        ...items.map((item) => ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.location_on_outlined),
+            title: Text(item),
+            trailing: const Icon(Icons.arrow_forward, size: 20),
+            onTap: () => onTap(item))),
       ]));
 }
 
@@ -425,15 +439,11 @@ class _LoadingHome extends StatelessWidget {
       padding: const EdgeInsets.all(20),
       child: Column(children: [
         Container(
-            height: 250,
+            height: 340,
             decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(AppRadius.xl))),
-        const SizedBox(height: 20),
-        ...List.generate(
-            3,
-            (_) => const Padding(
-                padding: EdgeInsets.only(bottom: 16),
-                child: PropertySkeleton()))
+                borderRadius: BorderRadius.circular(24))),
+        const SizedBox(height: 24),
+        const PropertySkeleton(),
       ]));
 }

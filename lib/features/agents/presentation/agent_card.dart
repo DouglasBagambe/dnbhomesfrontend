@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/theme/tokens.dart';
 import '../../listings/domain/property.dart';
 
 class AgentCard extends StatelessWidget {
@@ -49,9 +48,9 @@ class AgentCard extends StatelessWidget {
                           ),
                           if (agent.verified) ...[
                             const SizedBox(width: 5),
-                            const Icon(
-                              Icons.verified,
-                              color: AppColors.brand,
+                            Icon(
+                              Icons.verified_outlined,
+                              color: Theme.of(context).colorScheme.primary,
                               size: 18,
                             ),
                           ],

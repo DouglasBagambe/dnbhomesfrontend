@@ -47,84 +47,145 @@ class _CompareScreenState extends State<CompareScreen> {
           ? AppErrorState(message: error.toString(), onRetry: load)
           : items.length < 2
               ? const Center(child: CircularProgressIndicator())
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: items
-                          .map((item) => Expanded(
-                              child: Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Column(children: [
-                                    ClipRRect(
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: SizedBox(
-                                            height: 150,
-                                            width: double.infinity,
-                                            child: item.imageUrl == null
-                                                ? const ColoredBox(
-                                                    color: Colors.black12)
-                                                : CachedNetworkImage(
-                                                    imageUrl: item.imageUrl!,
-                                                    fit: BoxFit.cover))),
-                                    const SizedBox(height: 12),
-                                    Text(item.title,
-                                        maxLines: 2,
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium),
-                                    const SizedBox(height: 8),
-                                    Text(formatMoney(item.price),
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .primary)),
-                                    const SizedBox(height: 18),
-                                    _row('Location', item.location.shortLabel),
-                                    _row('Purpose', titleCase(item.purpose)),
-                                    _row('Type', titleCase(item.type)),
-                                    _row('Bedrooms',
-                                        item.bedrooms?.toString() ?? '—'),
-                                    _row('Bathrooms',
-                                        item.bathrooms?.toString() ?? '—'),
-                                    _row(
-                                        'Size',
-                                        item.size == null
-                                            ? '—'
-                                            : '${item.size!.round()} ${item.sizeUnit}'),
-                                    _row('Verified',
-                                        item.verified ? 'Yes' : 'No'),
-                                    _row(
-                                        'Agent',
-                                        item.agent?.name ??
-                                            item.agency?.name ??
-                                            '—'),
-                                    _row(
-                                        'Amenities',
-                                        item.amenities.isEmpty
-                                            ? '—'
-                                            : item.amenities.join(', '))
-                                  ]))))
-                          .toList())));
-  Widget _row(String label, String value) => Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-          border: Border(
-              bottom: BorderSide(color: Theme.of(context).dividerColor))),
-      child: Column(children: [
-        Text(label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        const SizedBox(height: 4),
-        Text(value,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w600))
-      ]));
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+                  children: [
+                      Text('Two places. A clearer choice.',
+                          style: Theme.of(context).textTheme.headlineSmall),
+                      const SizedBox(height: 24),
+                      Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: items
+                              .map((item) => Expanded(
+                                  child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6),
+                                      child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                child: AspectRatio(
+                                                    aspectRatio: 4 / 3,
+                                                    child: item.imageUrl == null
+                                                        ? ColoredBox(
+                                                            color: Theme
+                                                                    .of(context)
+                                                                .colorScheme
+                                                                .surfaceContainerHighest,
+                                                            child: const Icon(Icons
+                                                                .home_work_outlined))
+                                                        : CachedNetworkImage(
+                                                            imageUrl:
+                                                                item.imageUrl!,
+                                                            fit:
+                                                                BoxFit.cover))),
+                                            const SizedBox(height: 12),
+                                            Text(formatMoney(item.price),
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .primary)),
+                                            const SizedBox(height: 8),
+                                            Text(item.title,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium),
+                                          ]))))
+                              .toList()),
+                      const SizedBox(height: 24),
+                      ...[
+                        (
+                          'Location',
+                          items.map((p) => p.location.shortLabel).toList()
+                        ),
+                        (
+                          'Purpose',
+                          items.map((p) => titleCase(p.purpose)).toList()
+                        ),
+                        ('Type', items.map((p) => titleCase(p.type)).toList()),
+                        (
+                          'Bedrooms',
+                          items
+                              .map((p) => p.bedrooms?.toString() ?? '—')
+                              .toList()
+                        ),
+                        (
+                          'Bathrooms',
+                          items
+                              .map((p) => p.bathrooms?.toString() ?? '—')
+                              .toList()
+                        ),
+                        (
+                          'Size',
+                          items
+                              .map((p) => p.size == null
+                                  ? '—'
+                                  : '${p.size!.round()} ${p.sizeUnit}')
+                              .toList()
+                        ),
+                        (
+                          'Verified',
+                          items.map((p) => p.verified ? 'Yes' : 'No').toList()
+                        ),
+                        (
+                          'Representative',
+                          items
+                              .map(
+                                  (p) => p.agent?.name ?? p.agency?.name ?? '—')
+                              .toList()
+                        ),
+                        (
+                          'Amenities',
+                          items
+                              .map((p) => p.amenities.isEmpty
+                                  ? '—'
+                                  : p.amenities.join(', '))
+                              .toList()
+                        ),
+                      ].map((row) => Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(row.$1,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant)),
+                                const SizedBox(height: 8),
+                                Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: row.$2
+                                        .map((value) => Expanded(
+                                            child: Container(
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 4),
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                    color: row.$2[0] != row.$2[1]
+                                                        ? Theme.of(context)
+                                                            .colorScheme
+                                                            .surfaceContainerHighest
+                                                        : null,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12)),
+                                                child: Text(value,
+                                                    style: const TextStyle(
+                                                        fontWeight: FontWeight.w500)))))
+                                        .toList()),
+                              ]))),
+                    ]));
 }

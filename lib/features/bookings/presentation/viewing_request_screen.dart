@@ -101,16 +101,28 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
             children: [
               Card(
-                child: ListTile(
-                  title: Text(widget.property.title, maxLines: 2),
-                  subtitle: Text(
-                    '${formatMoney(widget.property.price)}\n${widget.property.location.shortLabel}',
-                  ),
-                  isThreeLine: true,
-                ),
-              ),
+                  child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(formatMoney(widget.property.price),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary)),
+                            const SizedBox(height: 8),
+                            Text(widget.property.title,
+                                style: Theme.of(context).textTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            Text(widget.property.location.shortLabel,
+                                style: Theme.of(context).textTheme.bodySmall),
+                          ]))),
               const SizedBox(height: 24),
-              Text('Preferred time',
+              Text('Preferred time · Uganda',
                   style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: 10),
               OutlinedButton.icon(

@@ -53,13 +53,14 @@ class _AppShellState extends State<AppShell> {
         ],
       ),
       floatingActionButton: compare.ids.length == 2
-          ? FloatingActionButton.extended(
+          ? FilledButton.icon(
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CompareScreen()),
               ),
               icon: const Icon(Icons.balance_outlined),
-              label: const Text('Compare (2)'),
+              label: const Text('Compare 2 homes'),
+              style: FilledButton.styleFrom(elevation: 0),
             )
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
