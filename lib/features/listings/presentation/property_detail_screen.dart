@@ -16,7 +16,7 @@ import '../../compare/compare_controller.dart';
 import '../../favorites/favorites_controller.dart';
 import '../data/listings_repository.dart';
 import '../domain/property.dart';
-import 'property_card.dart';
+import 'property_carousel.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   const PropertyDetailScreen({
@@ -302,29 +302,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     const SizedBox(height: 32),
                     _heading('Similar properties'),
                     const SizedBox(height: 14),
-                    SizedBox(
-                      height: 520 *
-                          MediaQuery.textScalerOf(context)
-                              .scale(1)
-                              .clamp(1, 1.6),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: similar.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (_, index) => PropertyCard(
-                          property: similar[index],
-                          layout: PropertyCardLayout.horizontal,
-                          onTap: () => Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
+                    PropertyCarousel(
+                      items: similar,
+                      onTap: (property) => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
                               builder: (_) => PropertyDetailScreen(
-                                idOrSlug: similar[index].slug,
-                                initial: similar[index],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                                  idOrSlug: property.slug, initial: property))),
                     ),
                   ],
                 ],

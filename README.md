@@ -2,7 +2,7 @@
 
 Flutter consumer property application operated by dnb Homes.
 
-The launcher, adaptive icon and splash retain the supplied black/white mark. The native V2 Home header uses the approved H. / HOMES consumer lockup. The retired gradient W/roof assets remain removed.
+The launcher, adaptive icon and splash retain the supplied black/white mark. The native V2 Home header uses the supplied theme-aware mark beside the HOMES consumer wordmark. The retired gradient W/roof assets remain removed.
 
 V2 design scope, isolated test data, native checks and screenshots are recorded in
 [the Android V2 QA record](docs/V2_ANDROID_QA.md).
@@ -56,3 +56,23 @@ This accepts loopback only, refuses any local keystore, produces an unsigned bun
 Keep `com.nilebitlabs.dnbhomes` as the production application ID; development/staging suffixes isolate installs. `version: 1.0.0+1` is the starting version only: before Play upload confirm the existing Play app's identity and select a greater unused versionCode via `--build-number`. Store/signing credentials stay outside Git; the Play app signing certificate is distinct from the upload certificate. Supply its actual SHA-256 fingerprint to the website `ANDROID_APP_LINK_FINGERPRINTS` setting, then verify dnbhomes.com TLS/assetlinks and Android domain verification. Debug/development installs do not prove verified production App Links.
 
 The merged release manifest requests INTERNET, ACCESS_NETWORK_STATE and the app-scoped AndroidX signature permission (no location/storage/camera permissions) and no blanket cleartext exception. R8/resource shrinking remain enabled with default and library consumer rules. Compile/target SDK 36 and native alignment checks meet the technical baseline, but test the signed release on physical devices including a real 16 KB device and Android 16 before launch. Play listing/privacy-policy URL, approved screenshots/content rating/Data safety declarations and any applicable developer verification/closed-testing requirements need the actual Play Console account. Complete those using verified product/legal facts; do not fabricate entries. Genuine listings/media and Douglas's contact details belong in Admin/production configuration, not a demo seed.
+
+### Public preview APK
+
+The staging flavor keeps its separate package ID and displays **Homes** on the
+phone. To build the installable debug APK against the current preview API:
+
+```sh
+flutter build apk --debug --flavor staging \
+  --dart-define=HOMES_ENV=staging \
+  --dart-define=HOMES_API_URL=https://dnbhomesbackend.onrender.com/api/v1
+```
+
+Output: `build/app/outputs/flutter-apk/app-staging-debug.apk`. This debug artifact
+can be transferred as a file to a phone; it uses the public API without USB or
+shared Wi-Fi. Release signing and production safeguards remain unchanged.
+
+For optimized phone testing, use the same command with `--profile` instead of
+`--debug`. Its output is `build/app/outputs/flutter-apk/app-staging-profile.apk`.
+This profile APK uses the Android Debug signing certificate and the same staging
+application ID; it is a sideloaded test build, not a production Play release.

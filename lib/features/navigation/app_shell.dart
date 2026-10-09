@@ -15,6 +15,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int index = 0;
+  final visited = <int>{0};
   final pages = const [
     HomeScreen(),
     DiscoverScreen(),
@@ -25,10 +26,16 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final compare = context.watch<CompareController>();
     return Scaffold(
-      body: IndexedStack(index: index, children: pages),
+      body: IndexedStack(index: index, children: [
+        for (var i = 0; i < pages.length; i++)
+          visited.contains(i) ? pages[i] : const SizedBox.shrink(),
+      ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
-        onDestinationSelected: (value) => setState(() => index = value),
+        onDestinationSelected: (value) => setState(() {
+          visited.add(value);
+          index = value;
+        }),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),

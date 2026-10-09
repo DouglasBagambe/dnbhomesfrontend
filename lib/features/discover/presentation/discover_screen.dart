@@ -22,6 +22,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   bool loading = true, loadingMore = false;
   ApiFailure? failure;
   int total = 0, pages = 0;
+  int loadEpoch = 0;
   final scroll = ScrollController();
   @override
   void initState() {
@@ -41,26 +42,29 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> load() async {
+    final epoch = ++loadEpoch;
+    final requested = query.copyWith(page: 1);
     setState(() {
       loading = true;
+      loadingMore = false;
       failure = null;
     });
     try {
       final page = await context.read<ListingsRepository>().list(
-            query.copyWith(page: 1),
+            requested,
           );
-      if (!mounted) return;
+      if (!mounted || epoch != loadEpoch) return;
       setState(() {
         items
           ..clear()
           ..addAll(page.items);
-        query = query.copyWith(page: 1);
+        query = requested;
         total = page.total;
         pages = page.pages;
         loading = false;
       });
     } on ApiFailure catch (error) {
-      if (mounted)
+      if (mounted && epoch == loadEpoch)
         setState(() {
           failure = error;
           loading = false;
@@ -69,18 +73,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> more() async {
+    if (loading || loadingMore || query.page >= pages) return;
+    final epoch = loadEpoch;
     setState(() => loadingMore = true);
     try {
       final next = query.copyWith(page: query.page + 1);
       final page = await context.read<ListingsRepository>().list(next);
-      if (!mounted) return;
+      if (!mounted || epoch != loadEpoch) return;
       setState(() {
         items.addAll(page.items);
         query = next;
         loadingMore = false;
       });
     } catch (_) {
-      if (mounted) setState(() => loadingMore = false);
+      if (mounted && epoch == loadEpoch) setState(() => loadingMore = false);
     }
   }
 
@@ -120,7 +126,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
+  Widget build(BuildContext context) => Scaffold(
+          body: SafeArea(
         child: CustomScrollView(
           controller: scroll,
           slivers: [
@@ -299,7 +306,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ),
           ],
         ),
-      );
+      ));
 
   Widget _card(BuildContext context, int i) {
     if (i == items.length) {

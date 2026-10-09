@@ -53,7 +53,7 @@ android {
         create("staging") {
             dimension = "environment"
             applicationIdSuffix = ".staging"
-            resValue("string", "app_name", "Homes Staging")
+            resValue("string", "app_name", "Homes")
         }
         create("production") {
             dimension = "environment"

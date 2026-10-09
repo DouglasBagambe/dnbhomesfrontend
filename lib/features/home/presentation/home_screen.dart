@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
 import '../../../core/network/api_client.dart';
@@ -7,7 +8,7 @@ import '../../../core/widgets/states.dart';
 import '../../discover/presentation/discover_screen.dart';
 import '../../listings/data/listings_repository.dart';
 import '../../listings/domain/property.dart';
-import '../../listings/presentation/property_card.dart';
+import '../../listings/presentation/property_carousel.dart';
 import '../../listings/presentation/property_detail_screen.dart';
 import '../../search/presentation/search_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
@@ -28,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => load());
   }
 
-  Future<void> load() async {
+  Future<void> load({bool refresh = false}) async {
     setState(() {
       loading = true;
       failure = null;
@@ -36,10 +37,13 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final repo = context.read<ListingsRepository>();
       final results = await Future.wait([
-        repo.list(const ListingQuery(featured: true, limit: 8)),
-        repo.list(const ListingQuery(
-            verified: true, limit: 8, sort: ListingSort.popular)),
-        repo.list(const ListingQuery(limit: 10))
+        repo.list(const ListingQuery(featured: true, limit: 8),
+            refresh: refresh),
+        repo.list(
+            const ListingQuery(
+                verified: true, limit: 8, sort: ListingSort.popular),
+            refresh: refresh),
+        repo.list(const ListingQuery(limit: 10), refresh: refresh)
       ]);
       if (!mounted) return;
       setState(() {
@@ -66,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) => SafeArea(
       child: RefreshIndicator(
-          onRefresh: load,
+          onRefresh: () => load(refresh: true),
           child: CustomScrollView(slivers: [
             SliverToBoxAdapter(child: _topBar()),
             if (loading)
@@ -86,7 +90,15 @@ class _HomeScreenState extends State<HomeScreen> {
         Semantics(
             label: 'Homes',
             child: Row(children: [
-              Text('H.', style: Theme.of(context).textTheme.headlineMedium),
+              SvgPicture.asset(
+                Theme.of(context).brightness == Brightness.dark
+                    ? 'assets/images/dnblogdark-removebg-preview.svg'
+                    : 'assets/images/dnblogolight-removebg-preview.svg',
+                width: 44,
+                height: 44,
+                fit: BoxFit.contain,
+                excludeFromSemantics: true,
+              ),
               const SizedBox(width: 12),
               Container(
                   width: 1, height: 20, color: Theme.of(context).dividerColor),
@@ -187,27 +199,15 @@ class _HomeScreenState extends State<HomeScreen> {
                                   child: const Text('See all'))
                             ])),
                     const SizedBox(height: 12),
-                    SizedBox(
-                        height: 520 *
-                            MediaQuery.textScalerOf(context)
-                                .scale(1)
-                                .clamp(1, 1.6),
-                        child: items.isEmpty
-                            ? const AppEmptyState(
-                                icon: Icons.home_work_outlined,
-                                title: 'No listings yet',
-                                message: 'New properties will appear here.')
-                            : ListView.separated(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                scrollDirection: Axis.horizontal,
-                                itemBuilder: (_, i) => PropertyCard(
-                                    property: items[i],
-                                    onTap: () => open(items[i]),
-                                    layout: PropertyCardLayout.horizontal),
-                                separatorBuilder: (_, __) =>
-                                    const SizedBox(width: 14),
-                                itemCount: items.length))
+                    items.isEmpty
+                        ? const AppEmptyState(
+                            icon: Icons.home_work_outlined,
+                            title: 'No listings yet',
+                            message: 'New properties will appear here.')
+                        : PropertyCarousel(
+                            items: items,
+                            onTap: open,
+                            padding: const EdgeInsets.symmetric(horizontal: 20))
                   ])));
 }
 

@@ -115,16 +115,46 @@ class PropertyPage {
 }
 
 class ListingsRepository {
-  ListingsRepository(this._api);
+  ListingsRepository(this._api, {DateTime Function()? clock})
+      : _clock = clock ?? DateTime.now;
   final ApiClient _api;
-  Future<PropertyPage> list(ListingQuery query) async {
+  final DateTime Function() _clock;
+  final _cache = <String, ({DateTime expiresAt, PropertyPage page})>{};
+  final _inFlight = <String, Future<PropertyPage>>{};
+
+  Future<PropertyPage> list(ListingQuery query, {bool refresh = false}) {
+    final key = Uri(queryParameters: {
+      for (final entry in query.toQuery().entries)
+        if (entry.value?.isNotEmpty == true) entry.key: entry.value!,
+    }).query;
+    final cached = _cache[key];
+    if (!refresh && cached != null && _clock().isBefore(cached.expiresAt)) {
+      return Future.value(cached.page);
+    }
+    if (!refresh && _inFlight[key] != null) return _inFlight[key]!;
+    late Future<PropertyPage> pending;
+    pending = _load(query).then((page) {
+      if (identical(_inFlight[key], pending)) {
+        _cache.remove(key);
+        _cache[key] =
+            (expiresAt: _clock().add(const Duration(seconds: 30)), page: page);
+        if (_cache.length > 32) _cache.remove(_cache.keys.first);
+      }
+      return page;
+    }).whenComplete(() {
+      if (identical(_inFlight[key], pending)) _inFlight.remove(key);
+    });
+    _inFlight[key] = pending;
+    return pending;
+  }
+
+  Future<PropertyPage> _load(ListingQuery query) async {
     final json = await _api.getJson('/properties', query: query.toQuery());
     final pagination = json['pagination'] as Map<String, dynamic>? ?? const {};
     return PropertyPage(
-      items: (json['data'] as List? ?? const [])
+      items: List.unmodifiable((json['data'] as List? ?? const [])
           .whereType<Map<String, dynamic>>()
-          .map(Property.fromJson)
-          .toList(),
+          .map(Property.fromJson)),
       page: (pagination['page'] as num?)?.toInt() ?? query.page,
       limit: (pagination['limit'] as num?)?.toInt() ?? query.limit,
       total: (pagination['total'] as num?)?.toInt() ?? 0,

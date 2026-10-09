@@ -45,6 +45,7 @@ class PropertyCard extends StatelessWidget {
                 ],
               )
             : Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [image, details],
               ),
