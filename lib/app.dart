@@ -5,6 +5,7 @@ import 'core/navigation_observer.dart';
 import 'core/state/theme_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'features/bookings/bookings_controller.dart';
+import 'features/accounts/consumer_controller.dart';
 import 'features/bookings/data/bookings_repository.dart';
 import 'features/compare/compare_controller.dart';
 import 'features/favorites/favorites_controller.dart';
@@ -27,6 +28,13 @@ class HomesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FavoritesController()),
         ChangeNotifierProvider(create: (_) => CompareController()),
         ChangeNotifierProvider(create: (_) => BookingsController()),
+        ChangeNotifierProvider(
+            create: (context) => ConsumerController(
+                api,
+                context.read<FavoritesController>(),
+                context.read<CompareController>(),
+                context.read<BookingsController>()),
+            lazy: false),
       ],
       child: Consumer<ThemeController>(
         builder: (_, theme, __) => MaterialApp(

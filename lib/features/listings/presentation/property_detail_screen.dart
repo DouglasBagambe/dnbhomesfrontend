@@ -11,6 +11,7 @@ import '../../../core/theme/tokens.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/states.dart';
 import '../../agents/presentation/agent_card.dart';
+import '../../accounts/consumer_controller.dart';
 import '../../bookings/presentation/viewing_request_screen.dart';
 import '../../compare/compare_controller.dart';
 import '../../favorites/favorites_controller.dart';
@@ -53,6 +54,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     try {
       final repo = context.read<ListingsRepository>();
       final detail = await repo.get(widget.idOrSlug);
+      if (mounted) context.read<ConsumerController?>()?.recordRecent(detail.id);
       final related = await repo.list(ListingQuery(
         type: detail.type,
         area: detail.location.area.isEmpty ? null : detail.location.area,

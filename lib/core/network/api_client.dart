@@ -27,6 +27,9 @@ class ApiClient {
         baseUrl = baseUrl ?? AppConfig.apiBaseUrl;
   final http.Client _client;
   final String baseUrl;
+  Future<String?> Function()? consumerToken;
+  Future<void> Function(String)? onConsumerToken;
+  Future<void> Function()? onConsumerExpired;
   static const timeout = Duration(seconds: 15);
   Future<Map<String, dynamic>> getJson(
     String path, {
@@ -54,21 +57,39 @@ class ApiClient {
       },
     );
     try {
+      final privateRequest = path.startsWith('/consumer/') ||
+          path == '/bookings' ||
+          path.startsWith('/auth/consumer/');
+      final session = privateRequest ? await consumerToken?.call() : null;
+      final requestHeaders = <String, String>{
+        if (session != null) 'Authorization': 'Bearer $session',
+        ...headers,
+      };
       final response = await (method == 'GET'
               ? _client.get(
                   uri,
-                  headers: {'Accept': 'application/json', ...headers},
+                  headers: {'Accept': 'application/json', ...requestHeaders},
                 )
               : _client.post(
                   uri,
                   headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    ...headers,
+                    ...requestHeaders,
                   },
                   body: jsonEncode(body),
                 ))
           .timeout(timeout);
+      final issued = response.headers['set-auth-token'];
+      if (privateRequest &&
+          response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          issued != null)
+        await onConsumerToken?.call(Uri.decodeComponent(issued));
+      if (session != null &&
+          response.statusCode == 401 &&
+          (path.startsWith('/consumer/') || path == '/bookings'))
+        await onConsumerExpired?.call();
       final decoded = response.body.isEmpty
           ? <String, dynamic>{}
           : jsonDecode(response.body);
@@ -77,6 +98,7 @@ class ApiClient {
           decoded is Map<String, dynamic>) return decoded;
       final message = decoded is Map
           ? ((decoded['error'] as Map?)?['message'] as String? ??
+              decoded['message'] as String? ??
               'Request failed')
           : 'Request failed';
       if (response.statusCode == 400)

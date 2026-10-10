@@ -4,14 +4,23 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/states.dart';
 import '../bookings_controller.dart';
+import '../../accounts/consumer_controller.dart';
 import '../data/bookings_repository.dart';
+import '../../listings/presentation/property_detail_screen.dart';
 
 class BookingsScreen extends StatelessWidget {
   const BookingsScreen({super.key});
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<BookingsController>();
-    final requests = controller.items;
+    final account = context.watch<ConsumerController?>();
+    final owned = (account?.viewings ?? <ViewingRequest>[])
+        .map((item) => item.id)
+        .toSet();
+    final requests = [
+      ...(account?.viewings ?? <ViewingRequest>[]),
+      ...controller.items.where((item) => !owned.contains(item.id))
+    ];
     final upcoming = requests.where((item) => item.isUpcoming).toList();
     final past = requests.where((item) => !upcoming.contains(item)).toList();
     return SafeArea(
@@ -33,8 +42,7 @@ class BookingsScreen extends StatelessWidget {
                         tooltip: 'Refresh viewing status',
                         onPressed: controller.refreshing
                             ? null
-                            : () => controller
-                                .refresh(context.read<BookingsRepository>()),
+                            : () => _refresh(context),
                         icon: const Icon(Icons.refresh))
                   ]),
                   if (controller.refreshing) const LinearProgressIndicator(),
@@ -43,7 +51,9 @@ class BookingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall),
                   const SizedBox(height: 5),
                   Text(
-                    'Viewing requests saved on this device',
+                    account?.signedIn == true
+                        ? 'Your account requests and this device’s guest requests'
+                        : 'Viewing requests saved on this device',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
@@ -51,6 +61,19 @@ class BookingsScreen extends StatelessWidget {
                 ],
               ),
             ),
+            if (account?.hasMoreViewings == true)
+              TextButton(
+                  onPressed: () async {
+                    try {
+                      await account!.refreshViewings(append: true);
+                    } catch (_) {
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text(
+                                'Older requests could not load. Please retry.')));
+                    }
+                  },
+                  child: const Text('Load older requests')),
             const TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,
@@ -63,12 +86,10 @@ class BookingsScreen extends StatelessWidget {
               child: TabBarView(
                 children: [
                   RefreshIndicator(
-                      onRefresh: () => controller
-                          .refresh(context.read<BookingsRepository>()),
+                      onRefresh: () => _refresh(context),
                       child: _list(context, upcoming, true)),
                   RefreshIndicator(
-                      onRefresh: () => controller
-                          .refresh(context.read<BookingsRepository>()),
+                      onRefresh: () => _refresh(context),
                       child: _list(context, past, false)),
                 ],
               ),
@@ -77,6 +98,23 @@ class BookingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _refresh(BuildContext context) async {
+    await context
+        .read<BookingsController>()
+        .refresh(context.read<BookingsRepository>());
+    if (!context.mounted) return;
+    final account = context.read<ConsumerController?>();
+    if (account?.signedIn == true) {
+      try {
+        await account!.refreshViewings();
+      } catch (_) {
+        if (context.mounted)
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Account refresh unavailable. Pull to retry.')));
+      }
+    }
   }
 
   Widget _list(
@@ -131,21 +169,41 @@ class BookingsScreen extends StatelessWidget {
                             color: Theme.of(context).colorScheme.primary)),
                   ],
                 ),
+                if (item.propertyTitle.isNotEmpty)
+                  Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(item.propertyTitle,
+                          style: Theme.of(context).textTheme.titleSmall)),
                 const SizedBox(height: 8),
                 Text(
                   DateFormat(
                     'EEE, d MMM yyyy · h:mm a',
-                  ).format(item.scheduledAt.toLocal()),
+                  ).format(
+                      item.scheduledAt.toUtc().add(const Duration(hours: 3))),
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  item.canSync
-                      ? 'Server status · Saved on this device'
-                      : 'Live refresh unavailable for this older request',
+                  context
+                              .read<ConsumerController?>()
+                              ?.viewings
+                              .any((owned) => owned.id == item.id) ==
+                          true
+                      ? 'Live account status'
+                      : item.canSync
+                          ? 'Server status · Saved on this device'
+                          : 'Live refresh unavailable for this older request',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
+                if (item.propertyId.isNotEmpty)
+                  TextButton(
+                      onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => PropertyDetailScreen(
+                                  idOrSlug: item.propertyId))),
+                      child: const Text('View property')),
               ],
             ),
           ),

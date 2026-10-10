@@ -5,6 +5,7 @@ import '../../../core/network/api_client.dart';
 import '../../../core/utils/formatters.dart';
 import '../../listings/domain/property.dart';
 import '../bookings_controller.dart';
+import '../../accounts/consumer_controller.dart';
 import '../data/bookings_repository.dart';
 
 class ViewingRequestScreen extends StatefulWidget {
@@ -23,6 +24,8 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
   DateTime date =
       DateTime.now().add(const Duration(days: 1)).copyWith(hour: 10, minute: 0);
   bool submitting = false;
+  late final requestKey =
+      "${widget.property.id}-${DateTime.now().microsecondsSinceEpoch}";
   @override
   void dispose() {
     name.dispose();
@@ -54,18 +57,32 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
     if (!form.currentState!.validate()) return;
     setState(() => submitting = true);
     try {
+      final account = context.read<ConsumerController?>();
+      final profile = account?.user;
       final request = await context.read<BookingsRepository>().requestViewing(
             ViewingRequestInput(
               propertyId: widget.property.id,
-              guestName: name.text,
-              guestEmail: email.text,
-              guestPhone: phone.text,
-              scheduledAt: date,
+              guestName: profile?.name ?? name.text,
+              guestEmail: profile?.email ?? email.text,
+              guestPhone: profile?.phone.isNotEmpty == true
+                  ? profile!.phone
+                  : phone.text,
+              scheduledAt: ugandaViewingTime(date),
               notes: notes.text,
             ),
+            idempotencyKey: requestKey,
           );
       if (!mounted) return;
-      await context.read<BookingsController>().add(request);
+      if (account?.signedIn == true) {
+        try {
+          await account!.refreshViewings();
+        } catch (_) {
+          /* Request succeeded; history refresh retries independently. */
+        }
+      } else {
+        await context.read<BookingsController>().add(ViewingRequest.fromJson(
+            {...request.toJson(), 'propertyTitle': widget.property.title}));
+      }
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
@@ -87,57 +104,62 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(
-          title: Text(
-            widget.property.purpose == 'short_stay'
-                ? 'Request availability'
-                : 'Request a viewing',
-          ),
+  Widget build(BuildContext context) {
+    final profile = context.watch<ConsumerController?>()?.user;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          widget.property.purpose == 'short_stay'
+              ? 'Request availability'
+              : 'Request a viewing',
         ),
-        body: Form(
-          key: form,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
-            children: [
-              Card(
-                  child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(formatMoney(widget.property.price),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary)),
-                            const SizedBox(height: 8),
-                            Text(widget.property.title,
-                                style: Theme.of(context).textTheme.titleMedium),
-                            const SizedBox(height: 8),
-                            Text(widget.property.location.shortLabel,
-                                style: Theme.of(context).textTheme.bodySmall),
-                          ]))),
-              const SizedBox(height: 24),
-              Text('Preferred time · Uganda',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: pickDate,
-                icon: const Icon(Icons.calendar_month_outlined),
-                label: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child:
-                      Text(DateFormat('EEE, d MMM yyyy · h:mm a').format(date)),
-                ),
+      ),
+      body: Form(
+        key: form,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 110),
+          children: [
+            Card(
+                child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(formatMoney(widget.property.price),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .primary)),
+                          const SizedBox(height: 8),
+                          Text(widget.property.title,
+                              style: Theme.of(context).textTheme.titleMedium),
+                          const SizedBox(height: 8),
+                          Text(widget.property.location.shortLabel,
+                              style: Theme.of(context).textTheme.bodySmall),
+                        ]))),
+            const SizedBox(height: 24),
+            Text('Preferred time · Uganda',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: pickDate,
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child:
+                    Text(DateFormat('EEE, d MMM yyyy · h:mm a').format(date)),
               ),
-              const SizedBox(height: 24),
-              Text('Your details',
-                  style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 10),
+            ),
+            const SizedBox(height: 24),
+            Text(
+                profile == null ? 'Your details' : 'Using your account details',
+                style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 10),
+            if (profile != null) Text('${profile.name} · ${profile.email}'),
+            if (profile == null)
               TextFormField(
                 controller: name,
                 textInputAction: TextInputAction.next,
@@ -146,7 +168,8 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                 validator: (v) =>
                     (v?.trim().length ?? 0) < 2 ? 'Enter your full name' : null,
               ),
-              const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            if (profile == null)
               TextFormField(
                 controller: email,
                 keyboardType: TextInputType.emailAddress,
@@ -156,7 +179,8 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                 validator: (v) =>
                     v?.contains('@') == true ? null : 'Enter a valid email',
               ),
-              const SizedBox(height: 12),
+            const SizedBox(height: 12),
+            if (profile == null || profile.phone.isEmpty)
               TextFormField(
                 controller: phone,
                 keyboardType: TextInputType.phone,
@@ -167,37 +191,38 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                         ? null
                         : 'Enter a valid phone number',
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: notes,
-                maxLines: 4,
-                maxLength: 1000,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
-                  hintText: 'Share any timing or access details',
-                ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: notes,
+              maxLines: 4,
+              maxLength: 1000,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                hintText: 'Share any timing or access details',
               ),
-              const SizedBox(height: 18),
-              Text(
-                'This is a request. The property representative must confirm the time before your viewing is scheduled.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: submitting ? null : submit,
-                child: submitting
-                    ? const SizedBox.square(
-                        dimension: 22,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Submit viewing request'),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'This is a request. The property representative must confirm the time before your viewing is scheduled.',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+            ),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: submitting ? null : submit,
+              child: submitting
+                  ? const SizedBox.square(
+                      dimension: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Submit viewing request'),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }
 
 class ViewingRequestConfirmation extends StatelessWidget {
@@ -248,7 +273,9 @@ class ViewingRequestConfirmation extends StatelessWidget {
                         'Requested time',
                         DateFormat(
                           'EEE, d MMM yyyy · h:mm a',
-                        ).format(request.scheduledAt.toLocal()),
+                        ).format(request.scheduledAt
+                            .toUtc()
+                            .add(const Duration(hours: 3))),
                       ),
                       _row('Status', titleCase(request.status)),
                       _row('Name', request.guestName),

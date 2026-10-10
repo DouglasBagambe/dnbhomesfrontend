@@ -1,6 +1,10 @@
 import 'dart:math';
 import '../../../core/network/api_client.dart';
 
+DateTime ugandaViewingTime(DateTime wallTime) => DateTime.utc(wallTime.year,
+        wallTime.month, wallTime.day, wallTime.hour, wallTime.minute)
+    .subtract(const Duration(hours: 3));
+
 class ViewingRequestInput {
   const ViewingRequestInput({
     required this.propertyId,
@@ -50,6 +54,7 @@ class ViewingRequest {
     required this.guestEmail,
     required this.guestPhone,
     this.statusAccessToken,
+    this.propertyTitle = '',
   });
   final String id,
       reference,
@@ -59,6 +64,7 @@ class ViewingRequest {
       guestEmail,
       guestPhone;
   final DateTime scheduledAt;
+  final String propertyTitle;
   final String? statusAccessToken;
   bool get canSync => statusAccessToken?.isNotEmpty == true && id.isNotEmpty;
   bool get isUpcoming =>
@@ -69,6 +75,7 @@ class ViewingRequest {
         'statusAccessToken': statusAccessToken,
         'reference': reference,
         'propertyId': propertyId,
+        'propertyTitle': propertyTitle,
         'scheduledAt': scheduledAt.toIso8601String(),
         'status': status,
         'guestName': guestName,
@@ -77,6 +84,7 @@ class ViewingRequest {
       };
   factory ViewingRequest.fromJson(Map<String, dynamic> j) => ViewingRequest(
         statusAccessToken: j['statusAccessToken'] as String?,
+        propertyTitle: j['propertyTitle'] as String? ?? '',
         id: j['_id'] as String? ?? j['id'] as String? ?? '',
         reference: j['reference'] as String? ?? '',
         propertyId: j['property'] is String
@@ -106,9 +114,10 @@ class BookingsRepository {
     });
   }
 
-  Future<ViewingRequest> requestViewing(ViewingRequestInput input) async {
+  Future<ViewingRequest> requestViewing(ViewingRequestInput input,
+      {String? idempotencyKey}) async {
     input.validate();
-    final key =
+    final key = idempotencyKey ??
         '${input.propertyId}-${DateTime.now().microsecondsSinceEpoch}-${Random.secure().nextInt(1 << 32)}';
     final json = await _api.postJson(
       '/bookings',

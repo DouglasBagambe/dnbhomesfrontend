@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/state/theme_controller.dart';
 import 'simple_content_screen.dart';
+import '../../accounts/account_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -13,6 +14,12 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.only(bottom: 40),
         children: [
+          ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('Your Homes account'),
+              subtitle: const Text('Sign in, profile and device sync'),
+              onTap: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AccountScreen()))),
           const _Header('Preferences'),
           ListTile(
             leading: const Icon(Icons.contrast),

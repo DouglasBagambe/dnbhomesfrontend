@@ -28,7 +28,11 @@ class _AppShellState extends State<AppShell> {
     return Scaffold(
       body: IndexedStack(index: index, children: [
         for (var i = 0; i < pages.length; i++)
-          visited.contains(i) ? pages[i] : const SizedBox.shrink(),
+          visited.contains(i)
+              ? i == 1
+                  ? DiscoverScreen(active: index == 1)
+                  : pages[i]
+              : const SizedBox.shrink(),
       ]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
@@ -59,7 +63,7 @@ class _AppShellState extends State<AppShell> {
           ),
         ],
       ),
-      floatingActionButton: compare.ids.length == 2
+      floatingActionButton: compare.ids.length == 2 && index != 1
           ? FilledButton.icon(
               onPressed: () => Navigator.push(
                 context,

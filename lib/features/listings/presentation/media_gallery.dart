@@ -10,11 +10,16 @@ class MediaGallery extends StatefulWidget {
       required this.media,
       required this.title,
       this.initialIndex = 0,
-      this.fullscreen = false});
+      this.fullscreen = false,
+      this.active = true,
+      this.immersive = false,
+      this.onIndexChanged});
   final List<PropertyMedia> media;
   final String title;
   final int initialIndex;
   final bool fullscreen;
+  final bool active, immersive;
+  final ValueChanged<int>? onIndexChanged;
   @override
   State<MediaGallery> createState() => _MediaGalleryState();
 }
@@ -56,11 +61,15 @@ class _MediaGalleryState extends State<MediaGallery> {
       PageView.builder(
           controller: page,
           itemCount: widget.media.length,
-          onPageChanged: (value) => setState(() => index = value),
+          onPageChanged: (value) {
+            video.currentState?.pause();
+            setState(() => index = value);
+            widget.onIndexChanged?.call(value);
+          },
           itemBuilder: (_, i) {
             final item = widget.media[i];
             if (item.type == 'video')
-              return i == index
+              return widget.active && i == index
                   ? _MediaVideo(
                       key: video,
                       url: item.url,
@@ -77,47 +86,96 @@ class _MediaGalleryState extends State<MediaGallery> {
                     label: item.alt ?? '${widget.title}, image ${i + 1}',
                     child: CachedNetworkImage(
                         imageUrl: item.url,
-                        fit: widget.fullscreen ? BoxFit.contain : BoxFit.cover,
-                        memCacheWidth: 1400,
+                        fit: widget.fullscreen && !widget.immersive
+                            ? BoxFit.contain
+                            : BoxFit.cover,
+                        memCacheWidth: widget.immersive ? 1000 : 1400,
                         placeholder: (_, __) =>
                             const Center(child: Icon(Icons.photo_outlined)),
                         errorWidget: (_, __, ___) =>
                             const Center(child: Text('Image unavailable')))));
           }),
-      Positioned(
-          left: 12,
-          right: 12,
-          bottom: 12,
-          child: Row(children: [
-            if (widget.fullscreen)
-              IconButton.filled(
-                  tooltip: 'Previous media',
-                  onPressed: () => page.animateToPage(
-                      (index - 1 + widget.media.length) % widget.media.length,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut),
-                  icon: const Icon(Icons.chevron_left)),
-            const Spacer(),
-            Container(
-                padding: const EdgeInsets.all(8),
-                color: Colors.black87,
-                child: Text(
-                    '${index + 1} / ${widget.media.length} · ${widget.media[index].type == "video" ? "Video" : "Image"}\n$images images · ${widget.media.length - images} videos',
-                    style: const TextStyle(color: Colors.white, fontSize: 12))),
-            if (!widget.fullscreen)
-              IconButton.filled(
-                  tooltip: 'Open full gallery',
-                  onPressed: fullscreen,
-                  icon: const Icon(Icons.fullscreen)),
-            if (widget.fullscreen)
-              IconButton.filled(
-                  tooltip: 'Next media',
-                  onPressed: () => page.animateToPage(
-                      (index + 1) % widget.media.length,
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeOut),
-                  icon: const Icon(Icons.chevron_right)),
-          ])),
+      if (!widget.immersive)
+        Positioned(
+            left: 12,
+            right: 12,
+            bottom: 12,
+            child: Row(children: [
+              if (widget.fullscreen)
+                IconButton.filled(
+                    tooltip: 'Previous media',
+                    onPressed: () => page.animateToPage(
+                        (index - 1 + widget.media.length) % widget.media.length,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut),
+                    icon: const Icon(Icons.chevron_left)),
+              const SizedBox(width: 4),
+              Expanded(
+                  child: Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.black87,
+                      child: Text(
+                          '${index + 1} / ${widget.media.length} · ${widget.media[index].type == "video" ? "Video" : "Image"}\n$images images · ${widget.media.length - images} videos',
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 12)))),
+              if (!widget.fullscreen)
+                IconButton.filled(
+                    tooltip: 'Open full gallery',
+                    onPressed: fullscreen,
+                    icon: const Icon(Icons.fullscreen)),
+              if (widget.fullscreen)
+                IconButton.filled(
+                    tooltip: 'Next media',
+                    onPressed: () => page.animateToPage(
+                        (index + 1) % widget.media.length,
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeOut),
+                    icon: const Icon(Icons.chevron_right)),
+            ])),
+      if (widget.immersive)
+        Positioned(
+            top: 12,
+            right: 12,
+            child: Semantics(
+                label:
+                    'Media ${index + 1} of ${widget.media.length}, $images images and ${widget.media.length - images} videos',
+                child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    color: Colors.black54,
+                    child: Text('${index + 1} / ${widget.media.length}',
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 12))))),
+      if (widget.immersive && widget.media.length > 1)
+        Positioned(
+            left: 8,
+            right: 8,
+            top: 0,
+            bottom: 0,
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton.filled(
+                      tooltip: 'Previous media',
+                      onPressed: index == 0
+                          ? null
+                          : () => page.animateToPage(index - 1,
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 200),
+                              curve: Curves.easeOut),
+                      icon: const Icon(Icons.chevron_left)),
+                  IconButton.filled(
+                      tooltip: 'Next media',
+                      onPressed: index == widget.media.length - 1
+                          ? null
+                          : () => page.animateToPage(index + 1,
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 200),
+                              curve: Curves.easeOut),
+                      icon: const Icon(Icons.chevron_right)),
+                ])),
     ]);
   }
 }
@@ -139,9 +197,11 @@ class _MediaVideoState extends State<_MediaVideo>
     WidgetsBinding.instance.addObserver(this);
   }
 
+  bool foreground = true, visible = true;
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) pause();
+    foreground = state == AppLifecycleState.resumed;
+    if (!foreground) pause();
   }
 
   @override
@@ -152,9 +212,23 @@ class _MediaVideoState extends State<_MediaVideo>
   }
 
   @override
-  void didPushNext() => pause();
+  void didPushNext() {
+    visible = false;
+    final player = controller;
+    controller = null;
+    loading = false;
+    player?.pause();
+    player?.dispose();
+    if (mounted) setState(() {});
+  }
+
   @override
   void didPop() => pause();
+  @override
+  void didPopNext() {
+    visible = true;
+  }
+
   @override
   void didUpdateWidget(covariant _MediaVideo oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -183,7 +257,8 @@ class _MediaVideoState extends State<_MediaVideo>
     try {
       await player.initialize().timeout(const Duration(seconds: 30));
       if (!mounted || controller != player) return;
-      await player.play();
+      await player.setVolume(0);
+      if (foreground && visible) await player.play();
       if (!mounted || controller != player) return;
       setState(() => loading = false);
     } catch (_) {
@@ -210,62 +285,92 @@ class _MediaVideoState extends State<_MediaVideo>
   @override
   Widget build(BuildContext context) {
     final player = controller;
+    Widget retry() => Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+          if (failed)
+            const Text('Video unavailable. Try again.',
+                style: TextStyle(color: Colors.white)),
+          IconButton.filled(
+              tooltip: failed ? 'Retry video' : 'Play video',
+              onPressed: play,
+              iconSize: 48,
+              icon: const Icon(Icons.play_circle_outline)),
+        ]));
     return ColoredBox(
         color: Colors.black,
-        child: Padding(
-            padding: const EdgeInsets.only(bottom: 80, top: 60),
-            child: Center(
-              child: loading
-                  ? const CircularProgressIndicator()
-                  : player == null
-                      ? Column(mainAxisSize: MainAxisSize.min, children: [
-                          if (failed)
-                            const Text('Video unavailable. Try again.',
-                                style: TextStyle(color: Colors.white)),
-                          IconButton.filled(
-                              tooltip: failed ? 'Retry video' : 'Play video',
-                              onPressed: play,
-                              iconSize: 64,
-                              icon: const Icon(Icons.play_circle_outline))
-                        ])
-                      : ValueListenableBuilder<VideoPlayerValue>(
-                          valueListenable: player,
-                          builder: (_, value, __) => value.hasError
-                              ? Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                      const Text(
-                                          'Video unavailable. Try again.',
-                                          style:
-                                              TextStyle(color: Colors.white)),
-                                      IconButton.filled(
-                                          tooltip: 'Retry video',
-                                          onPressed: play,
-                                          icon: const Icon(Icons.refresh)),
-                                    ])
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                      Flexible(
-                                          child: AspectRatio(
-                                              aspectRatio: value.aspectRatio,
-                                              child: Semantics(
-                                                  label: widget.label,
-                                                  child: VideoPlayer(player)))),
-                                      VideoProgressIndicator(player,
-                                          allowScrubbing: true,
-                                          padding: const EdgeInsets.all(12)),
-                                      IconButton.filled(
-                                          tooltip: value.isPlaying
-                                              ? 'Pause video'
-                                              : 'Play video',
-                                          onPressed: () => value.isPlaying
-                                              ? player.pause()
-                                              : player.play(),
-                                          icon: Icon(value.isPlaying
-                                              ? Icons.pause
-                                              : Icons.play_arrow)),
-                                    ])),
-            )));
+        child: loading
+            ? const Center(child: CircularProgressIndicator())
+            : player == null
+                ? retry()
+                : ValueListenableBuilder<VideoPlayerValue>(
+                    valueListenable: player,
+                    builder: (_, value, __) => value.hasError
+                        ? Center(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                const Text('Video unavailable. Try again.',
+                                    style: TextStyle(color: Colors.white)),
+                                IconButton.filled(
+                                    tooltip: 'Retry video',
+                                    onPressed: play,
+                                    icon: const Icon(Icons.refresh)),
+                              ]))
+                        : Stack(fit: StackFit.expand, children: [
+                            Center(
+                                child: AspectRatio(
+                                    aspectRatio: value.aspectRatio,
+                                    child: Semantics(
+                                        label: widget.label,
+                                        child: VideoPlayer(player)))),
+                            Positioned(
+                                left: 12,
+                                right: 12,
+                                bottom: 8,
+                                child: DecoratedBox(
+                                  decoration: BoxDecoration(
+                                      color:
+                                          Colors.black.withValues(alpha: .55),
+                                      borderRadius: BorderRadius.circular(12)),
+                                  child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        VideoProgressIndicator(player,
+                                            allowScrubbing: true,
+                                            padding: const EdgeInsets.fromLTRB(
+                                                12, 8, 12, 0)),
+                                        Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              IconButton(
+                                                  tooltip: value.volume == 0
+                                                      ? 'Unmute video'
+                                                      : 'Mute video',
+                                                  color: Colors.white,
+                                                  onPressed: () =>
+                                                      player.setVolume(
+                                                          value.volume == 0
+                                                              ? 1
+                                                              : 0),
+                                                  icon: Icon(value.volume == 0
+                                                      ? Icons.volume_off
+                                                      : Icons.volume_up)),
+                                              IconButton(
+                                                  tooltip: value.isPlaying
+                                                      ? 'Pause video'
+                                                      : 'Play video',
+                                                  color: Colors.white,
+                                                  onPressed: () =>
+                                                      value.isPlaying
+                                                          ? player.pause()
+                                                          : player.play(),
+                                                  icon: Icon(value.isPlaying
+                                                      ? Icons.pause
+                                                      : Icons.play_arrow)),
+                                            ]),
+                                      ]),
+                                )),
+                          ])));
   }
 }

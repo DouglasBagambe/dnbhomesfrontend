@@ -8,10 +8,17 @@ import '../../listings/presentation/property_card.dart';
 import '../../listings/presentation/property_detail_screen.dart';
 import '../../search/presentation/search_screen.dart';
 import 'filter_sheet.dart';
+import 'swipe_discovery.dart';
+import '../../compare/compare_controller.dart';
+import '../../compare/presentation/compare_screen.dart';
 
 class DiscoverScreen extends StatefulWidget {
-  const DiscoverScreen({super.key, this.initialQuery = const ListingQuery()});
+  const DiscoverScreen(
+      {super.key,
+      this.initialQuery = const ListingQuery(),
+      this.active = true});
   final ListingQuery initialQuery;
+  final bool active;
   @override
   State<DiscoverScreen> createState() => _DiscoverScreenState();
 }
@@ -24,6 +31,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   int total = 0, pages = 0;
   int loadEpoch = 0;
   final scroll = ScrollController();
+  bool swipe = false;
+  SwipePosition swipePosition = SwipePosition();
   @override
   void initState() {
     super.initState();
@@ -60,6 +69,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           ..clear()
           ..addAll(page.items);
         query = requested;
+        swipePosition = SwipePosition();
         total = page.total;
         pages = page.pages;
         loading = false;
@@ -130,16 +140,27 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget build(BuildContext context) => Scaffold(
           body: SafeArea(
         child: RefreshIndicator(
-            onRefresh: () => load(refresh: true),
+            onRefresh: () => swipe ? Future.value() : load(refresh: true),
             child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
+              physics: swipe
+                  ? const NeverScrollableScrollPhysics()
+                  : const AlwaysScrollableScrollPhysics(),
               controller: scroll,
               slivers: [
                 SliverAppBar(
-                  floating: true,
+                  floating: !swipe,
                   pinned: true,
                   title: const Text('Discover'),
                   actions: [
+                    if (!swipe &&
+                        context.watch<CompareController>().ids.length == 2)
+                      IconButton(
+                          tooltip: 'Open comparison',
+                          onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (_) => const CompareScreen())),
+                          icon: const Icon(Icons.balance)),
                     IconButton(
                         tooltip: 'Refresh properties',
                         onPressed: loading ? null : () => load(refresh: true),
@@ -154,97 +175,88 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     ),
                   ],
                 ),
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 54 *
-                        MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 5),
-                      scrollDirection: Axis.horizontal,
-                      itemBuilder: (_, i) {
-                        final labels = [
-                          'Buy',
-                          'Rent',
-                          'Short Stay',
-                          'Land',
-                          'Commercial',
-                        ];
-                        final selected = (labels[i] == 'Buy' &&
-                                query.purpose == 'sale') ||
-                            (labels[i] == 'Rent' && query.purpose == 'rent') ||
-                            (labels[i] == 'Short Stay' &&
-                                query.purpose == 'short_stay') ||
-                            (labels[i] == 'Land' && query.type == 'land') ||
-                            (labels[i] == 'Commercial' &&
-                                query.type == 'commercial');
-                        return ChoiceChip(
-                          label: Text(labels[i]),
-                          selected: selected,
-                          onSelected: (_) => purpose(labels[i]),
-                        );
-                      },
-                      separatorBuilder: (_, __) => const SizedBox(width: 8),
-                      itemCount: 5,
+                if (!swipe)
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 54 *
+                          MediaQuery.textScalerOf(context).scale(1).clamp(1, 2),
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 5),
+                        scrollDirection: Axis.horizontal,
+                        itemBuilder: (_, i) {
+                          final labels = [
+                            'Buy',
+                            'Rent',
+                            'Short Stay',
+                            'Land',
+                            'Commercial',
+                          ];
+                          final selected = (labels[i] == 'Buy' &&
+                                  query.purpose == 'sale') ||
+                              (labels[i] == 'Rent' &&
+                                  query.purpose == 'rent') ||
+                              (labels[i] == 'Short Stay' &&
+                                  query.purpose == 'short_stay') ||
+                              (labels[i] == 'Land' && query.type == 'land') ||
+                              (labels[i] == 'Commercial' &&
+                                  query.type == 'commercial');
+                          return ChoiceChip(
+                            label: Text(labels[i]),
+                            selected: selected,
+                            onSelected: (_) => purpose(labels[i]),
+                          );
+                        },
+                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        itemCount: 5,
+                      ),
                     ),
                   ),
-                ),
                 SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            final result =
-                                await FilterSheet.show(context, query);
-                            if (result != null) {
-                              query = result;
-                              load();
-                            }
-                          },
-                          icon: const Icon(Icons.tune),
-                          label: const Text('Filters'),
-                        ),
-                        const SizedBox(width: 8),
-                        OutlinedButton.icon(
-                          onPressed: () async {
-                            final result =
-                                await showModalBottomSheet<ListingSort>(
-                              context: context,
-                              builder: (_) => _SortSheet(selected: query.sort),
-                            );
-                            if (result != null) {
-                              query = query.copyWith(sort: result);
-                              load();
-                            }
-                          },
-                          icon: const Icon(Icons.swap_vert),
-                          label: const Text('Sort'),
-                        ),
-                        Text(
-                          '$total results',
-                          style: Theme.of(
-                            context,
-                          )
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                if ([
-                  query.q,
-                  query.area,
-                  query.district,
-                  query.purpose,
-                  query.type
-                ].any((value) => value?.isNotEmpty == true))
+                    child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                        child: swipe
+                            ? Row(children: [
+                                Expanded(child: _mode()),
+                                const SizedBox(width: 8),
+                                IconButton.outlined(
+                                    tooltip: 'Filters',
+                                    onPressed: _filters,
+                                    icon: const Icon(Icons.tune)),
+                                const SizedBox(width: 8),
+                                IconButton.outlined(
+                                    tooltip: 'Sort',
+                                    onPressed: _sort,
+                                    icon: const Icon(Icons.swap_vert))
+                              ])
+                            : Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                    OutlinedButton.icon(
+                                        onPressed: _filters,
+                                        icon: const Icon(Icons.tune),
+                                        label: const Text('Filters')),
+                                    _mode(),
+                                    OutlinedButton.icon(
+                                        onPressed: _sort,
+                                        icon: const Icon(Icons.swap_vert),
+                                        label: const Text('Sort')),
+                                    Text(
+                                        '$total ${total == 1 ? 'home' : 'homes'}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium)
+                                  ]))),
+                if (!swipe &&
+                    [
+                      query.q,
+                      query.area,
+                      query.district,
+                      query.purpose,
+                      query.type
+                    ].any((value) => value?.isNotEmpty == true))
                   SliverToBoxAdapter(
                       child: Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -296,6 +308,17 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                       message: 'Clear a filter or try a nearby location.',
                     ),
                   )
+                else if (swipe)
+                  SliverFillRemaining(
+                      hasScrollBody: true,
+                      child: SwipeDiscovery(
+                          key: ValueKey(loadEpoch),
+                          items: items,
+                          active: widget.active,
+                          hasMore: query.page < pages,
+                          loadingMore: loadingMore,
+                          onMore: more,
+                          position: swipePosition))
                 else
                   SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
@@ -336,6 +359,43 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ],
             )),
       ));
+
+  Widget _mode() => SegmentedButton<bool>(
+      style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(0, 44)),
+          padding: const WidgetStatePropertyAll(
+              EdgeInsets.symmetric(horizontal: 10)),
+          textStyle:
+              WidgetStatePropertyAll(Theme.of(context).textTheme.labelMedium)),
+      showSelectedIcon: false,
+      segments: const [
+        ButtonSegment(value: false, label: Text('Grid')),
+        ButtonSegment(value: true, label: Text('Swipe'))
+      ],
+      selected: {swipe},
+      onSelectionChanged: (value) {
+        if (scroll.hasClients) scroll.jumpTo(0);
+        setState(() => swipe = value.single);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && scroll.hasClients) scroll.jumpTo(0);
+        });
+      });
+  Future<void> _filters() async {
+    final result = await FilterSheet.show(context, query);
+    if (result != null && mounted) {
+      query = result;
+      load();
+    }
+  }
+
+  Future<void> _sort() async {
+    final result = await showModalBottomSheet<ListingSort>(
+        context: context, builder: (_) => _SortSheet(selected: query.sort));
+    if (result != null && mounted) {
+      query = query.copyWith(sort: result);
+      load();
+    }
+  }
 
   Widget _card(BuildContext context, int i) {
     if (i == items.length) {

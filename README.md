@@ -76,3 +76,36 @@ For optimized phone testing, use the same command with `--profile` instead of
 `--debug`. Its output is `build/app/outputs/flutter-apk/app-staging-profile.apk`.
 This profile APK uses the Android Debug signing certificate and the same staging
 application ID; it is a sideloaded test build, not a production Play release.
+
+### Debug/profile provenance
+
+Use `python3 scripts/build-staging-parity.py` to clean-build both staging modes
+from one source fingerprint. It preserves SHA-labelled APKs and a manifest under
+`build/staging-parity/`, including mode, byte size, SHA256, entrypoint and API.
+Do not identify source freshness by the launcher label or version 1.0.0 alone.
+The older 10 October hardening profile APK predates the compact-card commits;
+it should not be compared against a newer debug APK. Clean debug/profile builds
+of 6350274 rendered identical Discover card/control bounds on the same Android 9
+emulator; there is no mode-specific property-card code. Repeat parity verification
+after feature changes and preserve the new manifest alongside the APK you send.
+
+Development-flavor native media permits HTTP only to localhost, 127.0.0.1 and the Android emulator host alias 10.0.2.2, for isolated local QA. This configuration is absent from staging and production; all other cleartext hosts remain blocked.
+
+### Optional accounts and Discover Swipe
+
+Guests can browse, save, compare and request viewings without signing in. Verified
+consumer accounts synchronize Saved, Compare, recent properties and owned viewing
+history with the Website through the consumer API. Signed session credentials live
+in platform secure storage; retry queues contain public property IDs only. Guest
+viewings can be claimed only with their original private ownership token.
+
+Grid and Swipe share the current query and filters. Swipe uses vertical property
+navigation and horizontal media navigation, retaining media position after opening
+details. Only the active video allocates a player, starts on explicit muted play,
+and pauses when backgrounded or leaving its route. Images use bounded decoding.
+The test matrix covers phones/tablets, both themes and text scales up to 1.6.
+
+iOS configuration targets iOS 13, uses private Keychain entitlements and keeps the
+existing bundle identifier. Actual Xcode signing, iPhone playback and device QA
+require a Mac and Apple hardware; Linux validation does not establish iOS release
+readiness. Hosted verification/reset requires an authenticated email provider.
