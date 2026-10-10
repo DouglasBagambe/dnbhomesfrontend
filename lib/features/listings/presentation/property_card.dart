@@ -55,7 +55,7 @@ class PropertyCard extends StatelessWidget {
       button: true,
       label:
           '${property.title}, ${formatMoney(property.price)}, ${property.location.shortLabel}',
-      child: SizedBox(width: horizontal ? 272 : null, child: card),
+      child: SizedBox(width: horizontal ? 262 : null, child: card),
     );
   }
 
@@ -137,7 +137,7 @@ class PropertyCard extends StatelessWidget {
         '${property.size!.round()} ${property.sizeUnit}',
     ];
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -156,19 +156,19 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           _textSlot(
             context,
             property.title,
             lines: 2,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Row(
             children: [
               Icon(
                 Icons.location_on_outlined,
-                size: 17,
+                size: 16,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 4),
@@ -184,69 +184,80 @@ class PropertyCard extends StatelessWidget {
                       ),
                 ),
               ),
+              if (property.verified) ...[
+                const SizedBox(width: 6),
+                Icon(Icons.verified_outlined,
+                    size: 13, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 3),
+                Text(
+                  'Verified',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        height: 1.2,
+                      ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
           SizedBox(
-            height: MediaQuery.textScalerOf(context).scale(12) * 1.35,
-            child: property.verified
-                ? Row(children: [
-                    Icon(Icons.verified_outlined,
-                        size: 15, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(width: 4),
-                    const Text('Verified',
-                        style: TextStyle(fontSize: 12, height: 1.35)),
-                  ])
-                : null,
-          ),
-          const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: _textSlot(
-                  context,
-                  facts.join(' · '),
-                  lines: 1,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-              if (showCompare)
-                Consumer<CompareController>(
-                  builder: (_, compare, __) => IconButton(
-                    tooltip: compare.contains(property.id)
-                        ? 'Remove from compare'
-                        : 'Add to compare',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints:
-                        const BoxConstraints(minWidth: 40, minHeight: 40),
-                    onPressed: () async {
-                      final added = await compare.toggle(property.id);
-                      if (!added && context.mounted)
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Compare is limited to two properties.',
-                            ),
-                          ),
-                        );
-                    },
-                    icon: Icon(
-                      compare.contains(property.id)
-                          ? Icons.balance
-                          : Icons.balance_outlined,
-                      size: 19,
-                      color: compare.contains(property.id)
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+            height: 34,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: _textSlot(
+                      context,
+                      facts.join(' · '),
+                      lines: 1,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ),
-            ],
+                if (showCompare)
+                  Consumer<CompareController>(
+                    builder: (_, compare, __) => Align(
+                      alignment: Alignment.bottomRight,
+                      child: IconButton(
+                        tooltip: compare.contains(property.id)
+                            ? 'Remove from compare'
+                            : 'Add to compare',
+                        visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints:
+                            const BoxConstraints(minWidth: 34, minHeight: 34),
+                        onPressed: () async {
+                          final added = await compare.toggle(property.id);
+                          if (!added && context.mounted)
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Compare is limited to two properties.',
+                                ),
+                              ),
+                            );
+                        },
+                        icon: Icon(
+                          compare.contains(property.id)
+                              ? Icons.balance
+                              : Icons.balance_outlined,
+                          size: 18,
+                          color: compare.contains(property.id)
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),

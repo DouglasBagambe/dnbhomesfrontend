@@ -10,8 +10,8 @@ class PropertySkeleton extends StatelessWidget {
     return Semantics(
       label: 'Loading property',
       child: Container(
-        width: horizontal ? 280 : null,
-        height: horizontal ? 290 : 330,
+        width: horizontal ? 262 : null,
+        height: horizontal ? 260 : 330,
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(AppRadius.lg),
