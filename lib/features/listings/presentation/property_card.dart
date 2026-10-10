@@ -55,7 +55,7 @@ class PropertyCard extends StatelessWidget {
       button: true,
       label:
           '${property.title}, ${formatMoney(property.price)}, ${property.location.shortLabel}',
-      child: SizedBox(width: horizontal ? 280 : null, child: card),
+      child: SizedBox(width: horizontal ? 272 : null, child: card),
     );
   }
 
@@ -137,7 +137,7 @@ class PropertyCard extends StatelessWidget {
         '${property.size!.round()} ${property.sizeUnit}',
     ];
     return Padding(
-      padding: const EdgeInsets.all(AppSpace.md),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -148,7 +148,7 @@ class PropertyCard extends StatelessWidget {
                 child: _textSlot(
                   context,
                   formatMoney(property.price),
-                  lines: 2,
+                  lines: 1,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -156,14 +156,14 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           _textSlot(
             context,
             property.title,
             lines: 2,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Row(
             children: [
               Icon(
@@ -186,61 +186,68 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           SizedBox(
-            height: MediaQuery.textScalerOf(context).scale(12) * 1.4,
+            height: MediaQuery.textScalerOf(context).scale(12) * 1.35,
             child: property.verified
                 ? Row(children: [
                     Icon(Icons.verified_outlined,
-                        size: 16, color: Theme.of(context).colorScheme.primary),
+                        size: 15, color: Theme.of(context).colorScheme.primary),
                     const SizedBox(width: 4),
                     const Text('Verified',
-                        style: TextStyle(fontSize: 12, height: 1.4)),
+                        style: TextStyle(fontSize: 12, height: 1.35)),
                   ])
                 : null,
           ),
-          const SizedBox(height: 10),
-          _textSlot(context, facts.join(' · '),
-              lines: 2,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w600)),
-          SizedBox(
-              height: 48,
-              child: Row(children: [
-                const Spacer(),
-                if (showCompare)
-                  Consumer<CompareController>(
-                    builder: (_, compare, __) => IconButton(
-                      tooltip: compare.contains(property.id)
-                          ? 'Remove from compare'
-                          : 'Add to compare',
-                      constraints:
-                          const BoxConstraints(minWidth: 48, minHeight: 48),
-                      onPressed: () async {
-                        final added = await compare.toggle(property.id);
-                        if (!added && context.mounted)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Compare is limited to two properties.',
-                              ),
+          const SizedBox(height: 6),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: _textSlot(
+                  context,
+                  facts.join(' · '),
+                  lines: 1,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (showCompare)
+                Consumer<CompareController>(
+                  builder: (_, compare, __) => IconButton(
+                    tooltip: compare.contains(property.id)
+                        ? 'Remove from compare'
+                        : 'Add to compare',
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints:
+                        const BoxConstraints(minWidth: 40, minHeight: 40),
+                    onPressed: () async {
+                      final added = await compare.toggle(property.id);
+                      if (!added && context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Compare is limited to two properties.',
                             ),
-                          );
-                      },
-                      icon: Icon(
-                        compare.contains(property.id)
-                            ? Icons.balance
-                            : Icons.balance_outlined,
-                        size: 19,
-                        color: compare.contains(property.id)
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
+                          ),
+                        );
+                    },
+                    icon: Icon(
+                      compare.contains(property.id)
+                          ? Icons.balance
+                          : Icons.balance_outlined,
+                      size: 19,
+                      color: compare.contains(property.id)
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
-              ])),
+                ),
+            ],
+          ),
         ],
       ),
     );
