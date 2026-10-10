@@ -10,6 +10,64 @@ import 'v2_layout_test.dart' show fixture;
 
 void main() {
   WidgetController.hitTestWarningShouldBeFatal = true;
+  testWidgets('Reduced motion keeps property and media navigation working',
+      (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+      tester.platformDispatcher.clearAccessibilityFeaturesTestValue();
+    });
+    final api = ApiClient(
+        baseUrl: 'https://fixture.example.invalid/api/v1',
+        client: MockClient((request) async => http.Response(
+            jsonEncode({
+              'data': List.generate(
+                  2,
+                  (i) => {
+                        ...fixture,
+                        '_id': '507f1f77bcf86cd79943901${i + 1}',
+                        'title': 'Reduced motion home $i',
+                        'media': List.generate(
+                            2,
+                            (j) => {
+                                  'type': 'image',
+                                  'url':
+                                      'https://fixture.example.invalid/image-$j.jpg',
+                                  'alt': 'QA image $j',
+                                }),
+                      }),
+              'pagination': {'page': 1, 'limit': 20, 'total': 2, 'pages': 1},
+            }),
+            200)));
+    await tester.pumpWidget(HomesApp(apiClient: api));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discover').last);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Swipe').first);
+    await tester.tap(find.text('Swipe').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Next media'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsWidgets);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byTooltip('Next property'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reduced motion home 1'), findsOneWidget);
+    await tester.tap(find.byTooltip('Previous property'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reduced motion home 0'), findsOneWidget);
+    await tester.tap(find.byTooltip('Previous media'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 2'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+  });
   for (final size in [
     const Size(360, 800),
     const Size(390, 844),

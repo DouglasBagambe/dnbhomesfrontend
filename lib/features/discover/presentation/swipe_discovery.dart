@@ -54,11 +54,13 @@ class _SwipeDiscoveryState extends State<SwipeDiscovery> {
 
   void step(int delta) {
     final next = (index + delta).clamp(0, widget.items.length - 1);
-    page.animateToPage(next,
-        duration: MediaQuery.disableAnimationsOf(context)
-            ? Duration.zero
-            : const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      page.jumpToPage(next);
+    } else {
+      page.animateToPage(next,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic);
+    }
   }
 
   @override

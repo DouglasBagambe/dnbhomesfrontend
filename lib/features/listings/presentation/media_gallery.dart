@@ -28,6 +28,15 @@ class _MediaGalleryState extends State<MediaGallery> {
   late final page = PageController(initialPage: widget.initialIndex);
   late int index = widget.initialIndex;
   final video = GlobalKey<_MediaVideoState>();
+  void navigate(int next) {
+    if (MediaQuery.disableAnimationsOf(context)) {
+      page.jumpToPage(next);
+    } else {
+      page.animateToPage(next,
+          duration: const Duration(milliseconds: 200), curve: Curves.easeOut);
+    }
+  }
+
   @override
   void dispose() {
     page.dispose();
@@ -104,10 +113,9 @@ class _MediaGalleryState extends State<MediaGallery> {
               if (widget.fullscreen)
                 IconButton.filled(
                     tooltip: 'Previous media',
-                    onPressed: () => page.animateToPage(
-                        (index - 1 + widget.media.length) % widget.media.length,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut),
+                    onPressed: () => navigate(
+                        (index - 1 + widget.media.length) %
+                            widget.media.length),
                     icon: const Icon(Icons.chevron_left)),
               const SizedBox(width: 4),
               Expanded(
@@ -126,10 +134,8 @@ class _MediaGalleryState extends State<MediaGallery> {
               if (widget.fullscreen)
                 IconButton.filled(
                     tooltip: 'Next media',
-                    onPressed: () => page.animateToPage(
-                        (index + 1) % widget.media.length,
-                        duration: const Duration(milliseconds: 200),
-                        curve: Curves.easeOut),
+                    onPressed: () =>
+                        navigate((index + 1) % widget.media.length),
                     icon: const Icon(Icons.chevron_right)),
             ])),
       if (widget.immersive)
@@ -157,23 +163,13 @@ class _MediaGalleryState extends State<MediaGallery> {
                 children: [
                   IconButton.filled(
                       tooltip: 'Previous media',
-                      onPressed: index == 0
-                          ? null
-                          : () => page.animateToPage(index - 1,
-                              duration: MediaQuery.disableAnimationsOf(context)
-                                  ? Duration.zero
-                                  : const Duration(milliseconds: 200),
-                              curve: Curves.easeOut),
+                      onPressed: index == 0 ? null : () => navigate(index - 1),
                       icon: const Icon(Icons.chevron_left)),
                   IconButton.filled(
                       tooltip: 'Next media',
                       onPressed: index == widget.media.length - 1
                           ? null
-                          : () => page.animateToPage(index + 1,
-                              duration: MediaQuery.disableAnimationsOf(context)
-                                  ? Duration.zero
-                                  : const Duration(milliseconds: 200),
-                              curve: Curves.easeOut),
+                          : () => navigate(index + 1),
                       icon: const Icon(Icons.chevron_right)),
                 ])),
     ]);
