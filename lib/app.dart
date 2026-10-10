@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
+import 'core/navigation_observer.dart';
 import 'core/state/theme_controller.dart';
 import 'core/theme/app_theme.dart';
 import 'features/bookings/bookings_controller.dart';
@@ -30,6 +31,7 @@ class HomesApp extends StatelessWidget {
       child: Consumer<ThemeController>(
         builder: (_, theme, __) => MaterialApp(
           title: 'Homes',
+          navigatorObservers: [homesRouteObserver],
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,

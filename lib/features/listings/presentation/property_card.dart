@@ -145,8 +145,10 @@ class PropertyCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
+                child: _textSlot(
+                  context,
                   formatMoney(property.price),
+                  lines: 2,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -155,10 +157,10 @@ class PropertyCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          Text(
+          _textSlot(
+            context,
             property.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+            lines: 2,
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 5),
@@ -184,60 +186,81 @@ class PropertyCard extends StatelessWidget {
               ),
             ],
           ),
-          if (property.verified) ...[
-            const SizedBox(height: 8),
-            Row(children: [
-              Icon(Icons.verified_outlined,
-                  size: 16, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 4),
-              const Text('Verified', style: TextStyle(fontSize: 12))
-            ])
-          ],
-          if (facts.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              facts.join(' · '),
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
-          Row(children: [
-            const Spacer(),
-            if (showCompare)
-              Consumer<CompareController>(
-                builder: (_, compare, __) => IconButton(
-                  tooltip: compare.contains(property.id)
-                      ? 'Remove from compare'
-                      : 'Add to compare',
-                  constraints:
-                      const BoxConstraints(minWidth: 48, minHeight: 48),
-                  onPressed: () async {
-                    final added = await compare.toggle(property.id);
-                    if (!added && context.mounted)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Compare is limited to two properties.',
-                          ),
-                        ),
-                      );
-                  },
-                  icon: Icon(
-                    compare.contains(property.id)
-                        ? Icons.balance
-                        : Icons.balance_outlined,
-                    size: 19,
-                    color: compare.contains(property.id)
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(height: 8),
+          SizedBox(
+            height: MediaQuery.textScalerOf(context).scale(12) * 1.4,
+            child: property.verified
+                ? Row(children: [
+                    Icon(Icons.verified_outlined,
+                        size: 16, color: Theme.of(context).colorScheme.primary),
+                    const SizedBox(width: 4),
+                    const Text('Verified',
+                        style: TextStyle(fontSize: 12, height: 1.4)),
+                  ])
+                : null,
+          ),
+          const SizedBox(height: 10),
+          _textSlot(context, facts.join(' · '),
+              lines: 2,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(fontWeight: FontWeight.w600)),
+          SizedBox(
+              height: 48,
+              child: Row(children: [
+                const Spacer(),
+                if (showCompare)
+                  Consumer<CompareController>(
+                    builder: (_, compare, __) => IconButton(
+                      tooltip: compare.contains(property.id)
+                          ? 'Remove from compare'
+                          : 'Add to compare',
+                      constraints:
+                          const BoxConstraints(minWidth: 48, minHeight: 48),
+                      onPressed: () async {
+                        final added = await compare.toggle(property.id);
+                        if (!added && context.mounted)
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Compare is limited to two properties.',
+                              ),
+                            ),
+                          );
+                      },
+                      icon: Icon(
+                        compare.contains(property.id)
+                            ? Icons.balance
+                            : Icons.balance_outlined,
+                        size: 19,
+                        color: compare.contains(property.id)
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-          ]),
+              ])),
         ],
       ),
     );
+  }
+
+  Widget _textSlot(BuildContext context, String text,
+      {required int lines, TextStyle? style}) {
+    final resolved =
+        (style ?? DefaultTextStyle.of(context).style).copyWith(height: 1.3);
+    return SizedBox(
+        height:
+            MediaQuery.textScalerOf(context).scale(resolved.fontSize ?? 14) *
+                1.3 *
+                lines,
+        child: Text(text,
+            maxLines: lines,
+            overflow: TextOverflow.ellipsis,
+            style: resolved,
+            strutStyle:
+                StrutStyle.fromTextStyle(resolved, forceStrutHeight: true)));
   }
 
   Widget _roundButton(

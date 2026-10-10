@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
+import 'media_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -37,7 +37,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   ApiFailure? failure;
   bool loading = true;
   List<Property> similar = [];
-  int imageIndex = 0;
 
   @override
   void initState() {
@@ -47,6 +46,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   }
 
   Future<void> load() async {
+    setState(() {
+      loading = true;
+      failure = null;
+    });
     try {
       final repo = context.read<ListingsRepository>();
       final detail = await repo.get(widget.idOrSlug);
@@ -100,7 +103,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         ),
       );
     }
-    final images = item.media.where((media) => media.type == 'image').toList();
+    final media = List<PropertyMedia>.of(item.media);
+    if (item.cover != null && !media.any((m) => m.url == item.cover!.url))
+      media.insert(0, item.cover!);
     return Scaffold(
       bottomNavigationBar: SafeArea(
           child: Padding(
@@ -121,56 +126,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             leading:
                 _circle(Icons.arrow_back, 'Back', () => Navigator.pop(context)),
             actions: [
+              _circle(
+                  Icons.refresh, 'Refresh property', loading ? () {} : load),
               _favorite(item),
               _compare(item),
               _circle(
                   Icons.share_outlined, 'Share property', () => share(item)),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: images.isEmpty
-                  ? ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: const Icon(Icons.home_work_outlined, size: 64),
-                    )
-                  : Stack(fit: StackFit.expand, children: [
-                      PageView.builder(
-                        onPageChanged: (index) =>
-                            setState(() => imageIndex = index),
-                        itemCount: images.length,
-                        itemBuilder: (_, index) => Semantics(
-                          image: true,
-                          excludeSemantics: true,
-                          label: images[index].alt?.trim().isNotEmpty == true
-                              ? images[index].alt
-                              : '${item.title}, image ${index + 1} of ${images.length}',
-                          child: CachedNetworkImage(
-                            imageUrl: images[index].url,
-                            fit: BoxFit.cover,
-                            memCacheWidth: 1400,
-                            errorWidget: (_, __, ___) => ColoredBox(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .surfaceContainerHighest,
-                                child: const Icon(Icons.home_work_outlined,
-                                    size: 48)),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                          right: 20,
-                          bottom: 16,
-                          child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                  color: AppColors.deep.withValues(alpha: .9),
-                                  borderRadius: BorderRadius.circular(10)),
-                              child: Text(
-                                  '${imageIndex + 1} / ${images.length}',
-                                  style:
-                                      const TextStyle(color: Colors.white)))),
-                    ]),
+              background: MediaGallery(
+                  key: ValueKey(media.map((m) => m.url).join('|')),
+                  media: media,
+                  title: item.title),
             ),
           ),
           SliverToBoxAdapter(
@@ -179,6 +146,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (loading) const LinearProgressIndicator(),
+                  if (failure != null)
+                    TextButton.icon(
+                        onPressed: load,
+                        icon: const Icon(Icons.refresh),
+                        label: Text(
+                            'Refresh failed. Saved details kept. ${failure!.message}')),
                   Text(formatMoney(item.price),
                       style: Theme.of(context)
                           .textTheme

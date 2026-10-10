@@ -31,8 +31,9 @@ class ApiClient {
   Future<Map<String, dynamic>> getJson(
     String path, {
     Map<String, String?> query = const {},
+    Map<String, String> headers = const {},
   }) =>
-      _send('GET', path, query: query);
+      _send('GET', path, query: query, headers: headers);
   Future<Map<String, dynamic>> postJson(
     String path,
     Map<String, dynamic> body, {

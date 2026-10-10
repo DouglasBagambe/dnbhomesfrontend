@@ -49,6 +49,7 @@ class ViewingRequest {
     required this.guestName,
     required this.guestEmail,
     required this.guestPhone,
+    this.statusAccessToken,
   });
   final String id,
       reference,
@@ -58,8 +59,14 @@ class ViewingRequest {
       guestEmail,
       guestPhone;
   final DateTime scheduledAt;
+  final String? statusAccessToken;
+  bool get canSync => statusAccessToken?.isNotEmpty == true && id.isNotEmpty;
+  bool get isUpcoming =>
+      scheduledAt.isAfter(DateTime.now()) &&
+      ["pending", "confirmed"].contains(status);
   Map<String, dynamic> toJson() => {
         'id': id,
+        'statusAccessToken': statusAccessToken,
         'reference': reference,
         'propertyId': propertyId,
         'scheduledAt': scheduledAt.toIso8601String(),
@@ -69,6 +76,7 @@ class ViewingRequest {
         'guestPhone': guestPhone,
       };
   factory ViewingRequest.fromJson(Map<String, dynamic> j) => ViewingRequest(
+        statusAccessToken: j['statusAccessToken'] as String?,
         id: j['_id'] as String? ?? j['id'] as String? ?? '',
         reference: j['reference'] as String? ?? '',
         propertyId: j['property'] is String
@@ -85,6 +93,19 @@ class ViewingRequest {
 class BookingsRepository {
   BookingsRepository(this._api);
   final ApiClient _api;
+  Future<ViewingRequest> refresh(ViewingRequest current) async {
+    if (!current.canSync) return current;
+    final response = await _api.getJson(
+        '/bookings/${Uri.encodeComponent(current.id)}/status',
+        headers: {'X-Viewing-Token': current.statusAccessToken!});
+    final data = response['data'] as Map<String, dynamic>;
+    return ViewingRequest.fromJson({
+      ...current.toJson(),
+      'status': data['status'],
+      'scheduledAt': data['scheduledAt']
+    });
+  }
+
   Future<ViewingRequest> requestViewing(ViewingRequestInput input) async {
     input.validate();
     final key =
