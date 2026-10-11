@@ -116,7 +116,8 @@ class ConsumerController extends ChangeNotifier {
       feedback = error.message;
     } catch (_) {
       capabilitiesReachable = false;
-      feedback = 'Account service is temporarily unreachable. Your local selections are kept.';
+      feedback =
+          'Account service is temporarily unreachable. Your local selections are kept.';
     }
     loading = false;
     changed();

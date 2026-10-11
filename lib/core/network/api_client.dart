@@ -63,7 +63,8 @@ class ApiClient {
       if (session != null && response.statusCode == 401) {
         await onConsumerExpired?.call();
       }
-      final decoded = response.body.isEmpty ? <dynamic>[] : jsonDecode(response.body);
+      final decoded =
+          response.body.isEmpty ? <dynamic>[] : jsonDecode(response.body);
       if (response.statusCode >= 200 &&
           response.statusCode < 300 &&
           decoded is List) return decoded;
@@ -98,6 +99,7 @@ class ApiClient {
       );
     }
   }
+
   Future<Map<String, dynamic>> _send(
     String method,
     String path, {

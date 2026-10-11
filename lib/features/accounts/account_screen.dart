@@ -54,13 +54,15 @@ class _AccountScreenState extends State<AccountScreen> {
       if (!mounted) return;
       final value = cause.message.toLowerCase();
       setState(() {
-        error = value.contains('account_not_linked') || value.contains('not linked')
+        error = value.contains('account_not_linked') ||
+                value.contains('not linked')
             ? 'This email already belongs to a Homes account. Sign in with your existing method, then connect this provider from Security.'
             : cause.message;
       });
     } catch (_) {
       if (mounted) {
-        setState(() => error = 'Unable to complete this request. Please retry.');
+        setState(
+            () => error = 'Unable to complete this request. Please retry.');
       }
     } finally {
       if (mounted) setState(() => busy = false);
@@ -94,7 +96,8 @@ class _AccountScreenState extends State<AccountScreen> {
             setState(() {
               mode = AccountMode.verify;
               password.clear();
-              message = 'We sent a six-digit verification code. It expires in 10 minutes.';
+              message =
+                  'We sent a six-digit verification code. It expires in 10 minutes.';
             });
           }
         case AccountMode.signIn:
@@ -250,8 +253,8 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _signedOut(ConsumerController account) {
     if (mode == AccountMode.welcome) {
-      final google = account.googleAvailable &&
-          AppConfig.googleWebClientId.isNotEmpty;
+      final google =
+          account.googleAvailable && AppConfig.googleWebClientId.isNotEmpty;
       final apple = account.appleAvailable &&
           (Theme.of(context).platform == TargetPlatform.iOS ||
               (AppConfig.appleServiceId.isNotEmpty &&
@@ -263,9 +266,8 @@ class _AccountScreenState extends State<AccountScreen> {
           if (google) ...[
             const SizedBox(height: 20),
             OutlinedButton(
-              onPressed: busy
-                  ? null
-                  : () => social(ConsumerSocialProvider.google),
+              onPressed:
+                  busy ? null : () => social(ConsumerSocialProvider.google),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(52),
                 backgroundColor:
@@ -281,9 +283,8 @@ class _AccountScreenState extends State<AccountScreen> {
             SizedBox(
               height: 52,
               child: SignInWithAppleButton(
-                onPressed: busy
-                    ? null
-                    : () => social(ConsumerSocialProvider.apple),
+                onPressed:
+                    busy ? null : () => social(ConsumerSocialProvider.apple),
                 style: Theme.of(context).brightness == Brightness.dark
                     ? SignInWithAppleButtonStyle.white
                     : SignInWithAppleButtonStyle.black,
@@ -414,10 +415,9 @@ class _AccountScreenState extends State<AccountScreen> {
             TextButton(
               onPressed: busy
                   ? null
-                  : () => setState(() => mode =
-                      mode == AccountMode.signIn
-                          ? AccountMode.register
-                          : AccountMode.signIn),
+                  : () => setState(() => mode = mode == AccountMode.signIn
+                      ? AccountMode.register
+                      : AccountMode.signIn),
               child: Text(mode == AccountMode.signIn
                   ? 'Create account'
                   : 'Back to sign in'),
@@ -458,9 +458,7 @@ class _AccountScreenState extends State<AccountScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 field('Full name', name,
-                    min: 2,
-                    max: 100,
-                    autofill: const [AutofillHints.name]),
+                    min: 2, max: 100, autofill: const [AutofillHints.name]),
                 Text(
                   'Verified email · ${user.email}',
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -482,10 +480,11 @@ class _AccountScreenState extends State<AccountScreen> {
                       ? null
                       : () => perform(() async {
                             if (form.currentState!.validate()) {
-                              await account.updateProfile(name.text, phone.text);
+                              await account.updateProfile(
+                                  name.text, phone.text);
                               if (mounted) {
-                                setState(() =>
-                                    message = 'Contact details updated.');
+                                setState(
+                                    () => message = 'Contact details updated.');
                               }
                             }
                           }),
@@ -540,7 +539,8 @@ class _AccountScreenState extends State<AccountScreen> {
                   child: SignInWithAppleButton(
                     onPressed: busy
                         ? null
-                        : () => social(ConsumerSocialProvider.apple, link: true),
+                        : () =>
+                            social(ConsumerSocialProvider.apple, link: true),
                     text: 'Connect Apple',
                     style: Theme.of(context).brightness == Brightness.dark
                         ? SignInWithAppleButtonStyle.white
@@ -790,8 +790,7 @@ class _Benefits extends StatelessWidget {
 }
 
 class _Benefit extends StatelessWidget {
-  const _Benefit(
-      {required this.icon, required this.title, required this.body});
+  const _Benefit({required this.icon, required this.title, required this.body});
   final IconData icon;
   final String title;
   final String body;
@@ -918,9 +917,8 @@ class _Notice extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              color: error
-                  ? Theme.of(context).colorScheme.onErrorContainer
-                  : null,
+              color:
+                  error ? Theme.of(context).colorScheme.onErrorContainer : null,
             ),
           ),
         ),
