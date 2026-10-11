@@ -40,6 +40,10 @@ class AppConfig {
         flavor: appFlavor ??
             (defaultTargetPlatform == TargetPlatform.iOS ? _environment : null),
         buildValidation: const bool.fromEnvironment('HOMES_BUILD_VALIDATION'),
+        googleWebClientId: googleWebClientId,
+        googleIosClientId: googleIosClientId,
+        appleServiceId: appleServiceId,
+        appleRedirectUri: appleRedirectUri,
       );
   static void validateValues({
     required String environmentName,
@@ -47,6 +51,10 @@ class AppConfig {
     required bool release,
     String? flavor,
     bool buildValidation = false,
+    String googleWebClientId = '',
+    String googleIosClientId = '',
+    String appleServiceId = '',
+    String appleRedirectUri = '',
   }) {
     if (!AppEnvironment.values.any((value) => value.name == environmentName)) {
       throw StateError('Unknown HOMES_ENV');
@@ -79,6 +87,27 @@ class AppConfig {
       }
     } else if (uri.scheme != 'http' && uri.scheme != 'https') {
       throw StateError('Invalid development API scheme');
+    }
+    if (environmentName == 'production') {
+      if (googleWebClientId.isEmpty) {
+        throw StateError('Production requires HOMES_GOOGLE_WEB_CLIENT_ID');
+      }
+      if (defaultTargetPlatform == TargetPlatform.iOS &&
+          googleIosClientId.isEmpty) {
+        throw StateError('Production iOS requires HOMES_GOOGLE_IOS_CLIENT_ID');
+      }
+      if (appleServiceId.isEmpty || appleRedirectUri.isEmpty) {
+        throw StateError(
+            'Production requires HOMES_APPLE_SERVICE_ID and HOMES_APPLE_REDIRECT_URI');
+      }
+      final appleUri = Uri.tryParse(appleRedirectUri);
+      if (appleUri == null ||
+          appleUri.scheme != 'https' ||
+          appleUri.host != uri.host ||
+          !appleUri.path.startsWith('/api/v1/consumer/apple/callback/')) {
+        throw StateError(
+            'HOMES_APPLE_REDIRECT_URI must use the production API Apple callback');
+      }
     }
   }
 
