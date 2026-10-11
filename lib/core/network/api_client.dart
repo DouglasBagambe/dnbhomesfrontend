@@ -43,6 +43,61 @@ class ApiClient {
     Map<String, String> headers = const {},
   }) =>
       _send('POST', path, body: body, headers: headers);
+  Future<List<dynamic>> getList(String path) async {
+    final uri = Uri.parse('$baseUrl$path');
+    try {
+      final session = await consumerToken?.call();
+      final response = await _client.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          if (session != null) 'Authorization': 'Bearer $session',
+        },
+      ).timeout(timeout);
+      final issued = response.headers['set-auth-token'];
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          issued != null) {
+        await onConsumerToken?.call(Uri.decodeComponent(issued));
+      }
+      if (session != null && response.statusCode == 401) {
+        await onConsumerExpired?.call();
+      }
+      final decoded = response.body.isEmpty ? <dynamic>[] : jsonDecode(response.body);
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          decoded is List) return decoded;
+      final message = decoded is Map
+          ? ((decoded['error'] as Map?)?['message'] as String? ??
+              decoded['message'] as String? ??
+              'Request failed')
+          : 'Request failed';
+      throw ApiFailure(
+        response.statusCode == 401 || response.statusCode == 403
+            ? ApiFailureKind.unauthorized
+            : response.statusCode >= 500
+                ? ApiFailureKind.server
+                : ApiFailureKind.validation,
+        message,
+        statusCode: response.statusCode,
+      );
+    } on TimeoutException {
+      throw const ApiFailure(
+        ApiFailureKind.timeout,
+        'The request took too long. Please try again.',
+      );
+    } on http.ClientException {
+      throw const ApiFailure(
+        ApiFailureKind.network,
+        'Unable to connect. Check your internet connection.',
+      );
+    } on FormatException {
+      throw const ApiFailure(
+        ApiFailureKind.parsing,
+        'The server returned an unexpected response.',
+      );
+    }
+  }
   Future<Map<String, dynamic>> _send(
     String method,
     String path, {
