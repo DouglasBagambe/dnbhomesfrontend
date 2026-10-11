@@ -6,6 +6,7 @@ import '../../../core/utils/formatters.dart';
 import '../../listings/domain/property.dart';
 import '../bookings_controller.dart';
 import '../../accounts/consumer_controller.dart';
+import '../../accounts/account_screen.dart';
 import '../data/bookings_repository.dart';
 
 class ViewingRequestScreen extends StatefulWidget {
@@ -154,11 +155,47 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-                profile == null ? 'Your details' : 'Using your account details',
+            Text(profile == null ? 'Your details' : 'Requesting as',
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 10),
-            if (profile != null) Text('${profile.name} · ${profile.email}'),
+            if (profile != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Theme.of(context).dividerColor),
+                  borderRadius: BorderRadius.circular(16),
+                  color: Theme.of(context).colorScheme.surface,
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(profile.name,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 4),
+                          Text(profile.email,
+                              style: Theme.of(context).textTheme.bodySmall),
+                          if (profile.phone.isNotEmpty)
+                            Text(profile.phone,
+                                style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const AccountScreen()),
+                      ),
+                      child: const Text('Edit'),
+                    ),
+                  ],
+                ),
+              ),
             if (profile == null)
               TextFormField(
                 controller: name,
@@ -203,7 +240,9 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'This is a request. The property representative must confirm the time before your viewing is scheduled.',
+              profile == null
+                  ? 'This sends a viewing request. The property representative must confirm the time before the appointment is scheduled.'
+                  : 'Homes will use your account contact details for this request. The appointment remains pending until the property representative confirms it.',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -216,7 +255,7 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                       dimension: 22,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Submit viewing request'),
+                  : const Text('Request this viewing'),
             ),
           ],
         ),
