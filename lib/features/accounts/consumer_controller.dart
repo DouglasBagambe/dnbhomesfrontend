@@ -7,6 +7,7 @@ import '../favorites/favorites_controller.dart';
 import '../compare/compare_controller.dart';
 import '../bookings/bookings_controller.dart';
 import '../bookings/data/bookings_repository.dart';
+import 'social_auth.dart';
 
 abstract class SessionStore {
   Future<String?> read();
@@ -42,6 +43,12 @@ class ConsumerProfile {
           phone: value['phone'] as String? ?? '');
 }
 
+class ConsumerLinkedAccount {
+  const ConsumerLinkedAccount({required this.id, required this.providerId});
+  final String id;
+  final String providerId;
+}
+
 class ConsumerController extends ChangeNotifier {
   ConsumerController(this.api, this.favorites, this.compare, this.bookings,
       {SessionStore? sessionStore})
@@ -61,6 +68,7 @@ class ConsumerController extends ChangeNotifier {
   final CompareController compare;
   final BookingsController bookings;
   final SessionStore sessionStore;
+  late final ConsumerSocialAuth socialAuth = ConsumerSocialAuth(api);
   late final Future<void> ready;
   ConsumerProfile? user;
   String? _token, feedback;
@@ -71,6 +79,7 @@ class ConsumerController extends ChangeNotifier {
   bool capabilitiesReachable = true;
   bool viewingUpdates = true;
   List<ViewingRequest> viewings = [];
+  List<ConsumerLinkedAccount> linkedAccounts = [];
   int _viewingPage = 0;
   bool hasMoreViewings = false;
   List<String> recent = [];
@@ -182,7 +191,7 @@ class ConsumerController extends ChangeNotifier {
       recent = (state['recent'] as List).cast<String>();
       viewingUpdates =
           (state['notifications'] as Map?)?['viewingUpdates'] != false;
-      await refreshViewings();
+      await Future.wait([refreshViewings(), refreshLinkedAccounts()]);
       feedback = null;
     } on ApiFailure catch (error) {
       feedback = error.message;
@@ -191,6 +200,36 @@ class ConsumerController extends ChangeNotifier {
       loading = false;
       changed();
     }
+  }
+
+  Future<void> refreshLinkedAccounts() async {
+    if (user == null) {
+      linkedAccounts = [];
+      changed();
+      return;
+    }
+    final result = await api.getJson('/auth/consumer/list-accounts');
+    final items = (result['data'] ?? result) as List? ?? const [];
+    linkedAccounts = items
+        .whereType<Map>()
+        .map((item) => ConsumerLinkedAccount(
+              id: item['id']?.toString() ?? '',
+              providerId: item['providerId']?.toString() ?? '',
+            ))
+        .where((item) => item.id.isNotEmpty && item.providerId.isNotEmpty)
+        .toList();
+    changed();
+  }
+
+  Future<void> socialSignIn(ConsumerSocialProvider provider,
+      {bool link = false}) async {
+    await socialAuth.signIn(provider, link: link);
+    await refresh();
+  }
+
+  Future<void> unlinkAccount(String accountId) async {
+    await auth('unlink-account', {'accountId': accountId});
+    await refreshLinkedAccounts();
   }
 
   Future<void> refreshViewings({bool append = false}) async {
@@ -306,6 +345,7 @@ class ConsumerController extends ChangeNotifier {
     _token = null;
     user = null;
     viewings = [];
+    linkedAccounts = [];
     await sessionStore.delete();
     await _restoreGuest();
     changed();
