@@ -14,7 +14,7 @@ class IOSReleaseTests(unittest.TestCase):
     def config(self, **patch):
         values = {'HOMES_ENV':'production', 'HOMES_API_URL':'https://api.homes-fixture.co.ug/api/v1', 'HOMES_WEBSITE_URL':'https://homes-fixture.co.ug'}
         values.update(patch)
-        return {'CONFIGURATION':'Release', 'DART_DEFINES':','.join(base64.b64encode(f'{key}={value}'.encode()).decode() for key,value in values.items())}
+        return {'CONFIGURATION':'Release', 'HOMES_LINK_HOST':'homes-fixture.co.ug', 'DART_DEFINES':','.join(base64.b64encode(f'{key}={value}'.encode()).decode() for key,value in values.items())}
     def test_release_guard(self):
         guard.validate(self.config())
         for patch in [{'HOMES_ENV':'development'}, {'HOMES_API_URL':'http://127.0.0.1/api/v1'}, {'HOMES_WEBSITE_URL':''}, {'HOMES_BUILD_VALIDATION':'true'}, {'HOMES_API_URL':'https://api.example.com/api/v1'}]:

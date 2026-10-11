@@ -20,6 +20,8 @@ def validate(values):
                 or any(host == domain or host.endswith('.'+domain) for domain in ('example.com','example.net','example.org'))
                 or url.username or url.password or url.query or url.fragment or url.path.rstrip('/') != root):
             raise ValueError(f'{key} must be an explicit public HTTPS URL with the correct path')
+        if key == 'HOMES_WEBSITE_URL' and values.get('HOMES_LINK_HOST', 'dnbhomeswebsite-psi.vercel.app') != host:
+            raise ValueError('HOMES_LINK_HOST must match HOMES_WEBSITE_URL for universal links')
 
 
 if __name__ == '__main__':
