@@ -32,7 +32,12 @@ void main() {
         environmentName: 'production',
         apiUrl: 'https://api.homes-fixture.co.ug/api/v1',
         release: true,
-        flavor: 'production');
+        flavor: 'production',
+        googleWebClientId: 'test-google-web',
+        googleIosClientId: 'test-google-ios',
+        appleServiceId: 'test-apple-service',
+        appleRedirectUri:
+            'https://api.homes-fixture.co.ug/api/v1/consumer/apple/callback/production');
     AppConfig.validateValues(
         environmentName: 'development',
         apiUrl: 'http://10.0.2.2:3000/api/v1',
