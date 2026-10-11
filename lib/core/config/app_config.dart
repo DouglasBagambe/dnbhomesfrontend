@@ -25,6 +25,12 @@ class AppConfig {
       String.fromEnvironment('HOMES_APPLE_SERVICE_ID');
   static const String appleRedirectUri =
       String.fromEnvironment('HOMES_APPLE_REDIRECT_URI');
+  static bool isPreviewProvider(String clientId, {String? environmentName}) =>
+      (environmentName ?? _environment) != 'production' &&
+      const [
+        '123456789012-previewhomes.apps.googleusercontent.com',
+        'com.nilebitlabs.dnbhomes.preview.web'
+      ].contains(clientId);
   static String propertyUrl(String slug, String id) =>
       Uri.parse(websiteUrl).resolve('/properties/$slug-$id').toString();
   static const String sentryDsn = String.fromEnvironment('SENTRY_DSN');

@@ -6,6 +6,9 @@ import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import 'consumer_controller.dart';
 import 'recent_screen.dart';
+import '../favorites/presentation/favorites_screen.dart';
+import '../compare/presentation/compare_screen.dart';
+import '../bookings/presentation/bookings_screen.dart';
 import 'social_auth.dart';
 
 enum AccountMode { welcome, register, signIn, verify, forgot, reset }
@@ -72,6 +75,17 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> social(ConsumerSocialProvider provider,
       {bool link = false}) async {
     final account = context.read<ConsumerController>();
+    final clientId = provider == ConsumerSocialProvider.google
+        ? AppConfig.googleWebClientId
+        : AppConfig.appleServiceId;
+    if (AppConfig.isPreviewProvider(clientId)) {
+      setState(() {
+        error = null;
+        message =
+            '${provider == ConsumerSocialProvider.google ? 'Google' : 'Apple'} sign-in will be available at launch.';
+      });
+      return;
+    }
     await perform(() async {
       await account.socialSignIn(provider, link: link);
       if (!mounted) return;
@@ -89,7 +103,6 @@ class _AccountScreenState extends State<AccountScreen> {
           await account.auth('sign-up/email', {
             'name': name.text.trim(),
             'email': email.text.trim(),
-            'phone': phone.text.trim(),
             'password': password.text,
           });
           if (mounted) {
@@ -201,7 +214,7 @@ class _AccountScreenState extends State<AccountScreen> {
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 620),
+            constraints: const BoxConstraints(maxWidth: 860),
             child: account.loading
                 ? const _AccountLoading()
                 : !account.capabilitiesReachable
@@ -222,9 +235,9 @@ class _AccountScreenState extends State<AccountScreen> {
                         : ListView(
                             padding: const EdgeInsets.fromLTRB(22, 14, 22, 44),
                             children: [
-                              if (user == null)
+                              if (user == null && mode != AccountMode.welcome)
                                 _SignedOutHeader(mode: mode)
-                              else
+                              else if (user != null)
                                 _SignedInHeader(user: user),
                               if (error != null) ...[
                                 const SizedBox(height: 14),
@@ -240,7 +253,9 @@ class _AccountScreenState extends State<AccountScreen> {
                               ],
                               const SizedBox(height: 24),
                               if (user == null)
-                                _signedOut(account)
+                                mode == AccountMode.welcome
+                                    ? _welcomeLayout(account)
+                                    : _signedOut(account)
                               else
                                 _signedIn(account),
                             ],
@@ -250,6 +265,31 @@ class _AccountScreenState extends State<AccountScreen> {
       ),
     );
   }
+
+  Widget _welcomeLayout(ConsumerController account) => LayoutBuilder(
+        builder: (context, constraints) {
+          const header = _SignedOutHeader(mode: AccountMode.welcome);
+          final actions = _signedOut(account);
+          if (constraints.maxWidth >= 700) {
+            return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Expanded(child: header),
+              const SizedBox(width: 48),
+              Expanded(
+                  child: Padding(
+                      padding: const EdgeInsets.only(top: 8), child: actions)),
+            ]);
+          }
+          return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                header,
+                const SizedBox(height: 24),
+                const Divider(),
+                const SizedBox(height: 16),
+                actions,
+              ]);
+        },
+      );
 
   Widget _signedOut(ConsumerController account) {
     if (mode == AccountMode.welcome) {
@@ -262,7 +302,6 @@ class _AccountScreenState extends State<AccountScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _Benefits(),
           if (google) ...[
             const SizedBox(height: 20),
             OutlinedButton(
@@ -296,12 +335,16 @@ class _AccountScreenState extends State<AccountScreen> {
           FilledButton(
             onPressed:
                 busy ? null : () => setState(() => mode = AccountMode.register),
+            style:
+                FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
             child: const Text('Create account'),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
             onPressed:
                 busy ? null : () => setState(() => mode = AccountMode.signIn),
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(52)),
             child: const Text('Sign in with email'),
           ),
           const SizedBox(height: 8),
@@ -322,12 +365,6 @@ class _AccountScreenState extends State<AccountScreen> {
             if (mode == AccountMode.register) ...[
               field('Full name', name,
                   min: 2, max: 100, autofill: const [AutofillHints.name]),
-              field('Phone (optional)', phone,
-                  optional: true,
-                  keyboard: TextInputType.phone,
-                  max: 30,
-                  hint: '+256…',
-                  autofill: const [AutofillHints.telephoneNumber]),
             ],
             if ([AccountMode.register, AccountMode.signIn, AccountMode.forgot]
                 .contains(mode))
@@ -449,6 +486,18 @@ class _AccountScreenState extends State<AccountScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          for (final item in [
+            ('Saved', const FavoritesScreen()),
+            ('Compare', const CompareScreen()),
+            ('Viewings', const BookingsScreen()),
+          ])
+            OutlinedButton(
+                onPressed: () => Navigator.push(
+                    context, MaterialPageRoute(builder: (_) => item.$2)),
+                child: Text(item.$1)),
+        ]),
+        const SizedBox(height: 18),
         _AccountCard(
           eyebrow: 'Profile',
           title: 'Your details',
@@ -723,13 +772,24 @@ class _SignedOutHeader extends StatelessWidget {
               AccountMode.forgot => 'Reset your password.',
               AccountMode.reset => 'Choose a new password.',
             },
-            style: Theme.of(context).textTheme.headlineLarge,
+            style: Theme.of(context)
+                .textTheme
+                .headlineLarge
+                ?.copyWith(fontSize: 32, height: 1.12, letterSpacing: -.8),
           ),
           const SizedBox(height: 10),
           Text(
-            'Browse without signing in. An account keeps your Saved homes, Compare shortlist, recent activity and viewing requests together across devices.',
+            mode == AccountMode.welcome
+                ? 'Saved homes, comparisons and viewing requests. Continue where you left off.'
+                : mode == AccountMode.register
+                    ? 'Just the essentials. Add a phone number when you need a viewing.'
+                    : 'Your saved places and next steps, right where you left them.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
+          if (mode == AccountMode.welcome) ...[
+            const SizedBox(height: 20),
+            const _Benefits(),
+          ],
         ],
       );
 }
@@ -751,7 +811,10 @@ class _SignedInHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             'Welcome, ${user.name.split(' ').first}.',
-            style: Theme.of(context).textTheme.headlineLarge,
+            style: Theme.of(context)
+                .textTheme
+                .headlineLarge
+                ?.copyWith(fontSize: 32, height: 1.12, letterSpacing: -.8),
           ),
           const SizedBox(height: 10),
           Text(
@@ -764,64 +827,26 @@ class _SignedInHeader extends StatelessWidget {
 
 class _Benefits extends StatelessWidget {
   const _Benefits();
-
   @override
-  Widget build(BuildContext context) => const Column(
-        children: [
-          _Benefit(
-            icon: Icons.favorite_border,
-            title: 'Save once',
-            body: 'See your favourites on web and mobile.',
+  Widget build(BuildContext context) => Column(children: [
+        for (final item in const [
+          (Icons.favorite_border, 'Save once · Across devices'),
+          (Icons.compare_arrows, 'Compare anywhere · Your shortlist'),
+          (Icons.calendar_month_outlined, 'Manage viewing requests'),
+          (Icons.history, 'Continue where you left off'),
+        ])
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(children: [
+              Icon(item.$1,
+                  size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: Text(item.$2,
+                      style: Theme.of(context).textTheme.bodyMedium)),
+            ]),
           ),
-          SizedBox(height: 10),
-          _Benefit(
-            icon: Icons.compare_arrows,
-            title: 'Compare anywhere',
-            body: 'Your shortlist stays in sync.',
-          ),
-          SizedBox(height: 10),
-          _Benefit(
-            icon: Icons.calendar_month_outlined,
-            title: 'Manage viewings',
-            body: 'Keep requests and statuses together.',
-          ),
-        ],
-      );
-}
-
-class _Benefit extends StatelessWidget {
-  const _Benefit({required this.icon, required this.title, required this.body});
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          )),
-                  const SizedBox(height: 3),
-                  Text(body, style: Theme.of(context).textTheme.bodySmall),
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
+      ]);
 }
 
 class _AccountCard extends StatelessWidget {
@@ -837,7 +862,7 @@ class _AccountCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border.all(color: Theme.of(context).dividerColor),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

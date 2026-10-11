@@ -155,7 +155,7 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(profile == null ? 'Your details' : 'Requesting as',
+            Text(profile == null ? 'Your details' : 'Contact',
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 10),
             if (profile != null)
@@ -173,7 +173,7 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(profile.name,
+                          Text('Requesting as ${profile.name.split(' ').first}',
                               style:
                                   const TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
@@ -191,7 +191,7 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                         MaterialPageRoute(
                             builder: (_) => const AccountScreen()),
                       ),
-                      child: const Text('Edit'),
+                      child: const Text('Edit contact'),
                     ),
                   ],
                 ),
