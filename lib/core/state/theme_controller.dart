@@ -3,8 +3,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeController extends ChangeNotifier {
   ThemeController() {
-    _load();
+    ready = _load();
   }
+  late final Future<void> ready;
   static const _key = 'homes_theme_mode';
   ThemeMode _mode = ThemeMode.system;
   ThemeMode get mode => _mode;

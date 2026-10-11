@@ -1,4 +1,5 @@
 import 'core/config/app_config.dart';
+import 'core/startup/startup_brand_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
@@ -45,6 +46,15 @@ class HomesApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: theme.mode,
+          builder: (context, child) => StartupBrandGate(
+            ready: Future.wait([
+              context.read<ThemeController>().ready,
+              context.read<FavoritesController>().ready,
+              context.read<CompareController>().ready,
+              context.read<BookingsController>().ready,
+            ]),
+            child: child ?? const SizedBox.shrink(),
+          ),
           routes: {'/': (_) => const AppShell()},
           onGenerateRoute: _propertyRoute,
           onGenerateInitialRoutes: (initialRoute) {

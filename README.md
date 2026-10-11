@@ -138,3 +138,21 @@ flutter build appbundle --release --flavor production --build-number=NEXT_UNUSED
 ```
 
 The placeholders above must be replaced with actual configuration; they are not active domain claims. Unsigned local validation AABs are intentionally non-runnable and unsuitable for distribution. CI checks all embedded ELF/ZIP alignment for 16-KB compatibility. Keep debug/profile phone QA separate from production signing.
+
+### Approved startup brand loader
+
+`lib/core/startup/startup_brand_loader.dart` is installed once in `HomesApp`'s
+root builder. The underlying Navigator starts normally, preserving cold/warm
+property deep links. The approved 4,080ms opening runs alongside local theme,
+Saved/Compare/Viewings restoration, then fades out in 180ms. If local bootstrap
+runs longer, it holds the completed composition without repainting or replaying.
+Optional account network synchronization remains in the background; it does not
+extend the splash. Navigation, property/media loading and all ordinary loading
+indicators are unchanged. A single bounded controller is disposed after use.
+
+The supplied SVG strings are parsed directly (including the elliptical O arcs),
+with cached PathMetrics and normalized 1.02-to-zero draw behavior. Flutter's SVG
+arc parser normalizes arcs to cubic segments, a vector-platform representation
+rather than a manual redraw. Timings, cubic curves, word transform, gap overlays,
+settle origin and colors match the approved HTML. `disableAnimations` displays
+the completed composition with a 150ms opacity fade, without stroke drawing.
