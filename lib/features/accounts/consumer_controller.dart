@@ -65,6 +65,10 @@ class ConsumerController extends ChangeNotifier {
   ConsumerProfile? user;
   String? _token, feedback;
   bool loading = true, syncing = false;
+  bool accountsAvailable = true;
+  bool googleAvailable = false;
+  bool appleAvailable = false;
+  bool capabilitiesReachable = true;
   bool viewingUpdates = true;
   List<ViewingRequest> viewings = [];
   int _viewingPage = 0;
@@ -84,20 +88,48 @@ class ConsumerController extends ChangeNotifier {
   Future<void> _load() async {
     await Future.wait([favorites.ready, compare.ready, bookings.ready]);
     try {
+      await refreshCapabilities();
       _token = await sessionStore.read();
-      if (_token != null)
+      if (!accountsAvailable) {
+        if (_token != null) await sessionStore.delete();
+        _token = null;
+        final prefs = await SharedPreferences.getInstance();
+        if (prefs.containsKey('homes_active_consumer')) await _restoreGuest();
+        feedback = null;
+      } else if (_token != null) {
         await refresh();
-      else if ((await SharedPreferences.getInstance())
-          .containsKey('homes_active_consumer')) await _restoreGuest();
+      } else if ((await SharedPreferences.getInstance())
+          .containsKey('homes_active_consumer')) {
+        await _restoreGuest();
+      }
+    } on ApiFailure catch (error) {
+      capabilitiesReachable = false;
+      feedback = error.message;
     } catch (_) {
-      feedback =
-          'Account connection unavailable. Your local selections are kept.';
+      capabilitiesReachable = false;
+      feedback = 'Account service is temporarily unreachable. Your local selections are kept.';
     }
     loading = false;
     changed();
   }
 
+  Future<void> refreshCapabilities() async {
+    final result = await api.getJson('/consumer/capabilities');
+    final data = result['data'] as Map<String, dynamic>? ?? const {};
+    final providers = data['providers'] as Map? ?? const {};
+    accountsAvailable = data['accounts'] == true;
+    googleAvailable = accountsAvailable && providers['google'] == true;
+    appleAvailable = accountsAvailable && providers['apple'] == true;
+    capabilitiesReachable = true;
+    if (!accountsAvailable) feedback = null;
+    changed();
+  }
+
   Future<void> auth(String action, Map<String, dynamic> body) async {
+    if (!accountsAvailable) {
+      throw const ApiFailure(ApiFailureKind.server,
+          'Accounts are not available yet. You can continue as a guest.');
+    }
     await api.postJson('/auth/consumer/$action', body);
     if (_token != null &&
         ['sign-in/email', 'email-otp/verify-email'].contains(action))
@@ -109,7 +141,7 @@ class ConsumerController extends ChangeNotifier {
   }
 
   Future<void> _refresh() async {
-    if (_token == null) return;
+    if (!accountsAvailable || _token == null) return;
     final generation = _epoch;
     syncing = true;
     changed();
@@ -291,8 +323,9 @@ class ConsumerController extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> deleteAccount(String password) async {
-    await auth('delete-user', {'password': password});
+  Future<void> deleteAccount([String? password]) async {
+    await auth('delete-user',
+        password?.isNotEmpty == true ? {'password': password} : {});
     await expire();
   }
 
