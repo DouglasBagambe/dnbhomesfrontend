@@ -13,6 +13,12 @@ class AppConfig {
     'HOMES_API_URL',
     defaultValue: 'http://10.0.2.2:3000/api/v1',
   );
+  static const String websiteUrl = String.fromEnvironment(
+    'HOMES_WEBSITE_URL',
+    defaultValue: 'https://dnbhomeswebsite-psi.vercel.app',
+  );
+  static String propertyUrl(String slug, String id) =>
+      Uri.parse(websiteUrl).resolve('/properties/$slug-$id').toString();
   static const String sentryDsn = String.fromEnvironment('SENTRY_DSN');
   static const String posthogKey = String.fromEnvironment('POSTHOG_KEY');
   static const String posthogHost = String.fromEnvironment('POSTHOG_HOST');
@@ -23,7 +29,8 @@ class AppConfig {
         environmentName: _environment,
         apiUrl: apiBaseUrl,
         release: kReleaseMode,
-        flavor: appFlavor,
+        flavor: appFlavor ??
+            (defaultTargetPlatform == TargetPlatform.iOS ? _environment : null),
         buildValidation: const bool.fromEnvironment('HOMES_BUILD_VALIDATION'),
       );
   static void validateValues({

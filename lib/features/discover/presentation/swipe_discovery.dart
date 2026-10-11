@@ -1,3 +1,4 @@
+import '../../../core/config/app_config.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -213,7 +214,7 @@ class _SwipeDiscoveryState extends State<SwipeDiscovery> {
                         await SharePlus.instance.share(ShareParams(
                             title: property.title,
                             text:
-                                '${property.title}\nhttps://dnbhomes.com/properties/${property.slug}-${property.id}',
+                                '${property.title}\n${AppConfig.propertyUrl(property.slug, property.id)}',
                             sharePositionOrigin: box == null
                                 ? null
                                 : box.localToGlobal(Offset.zero) & box.size));

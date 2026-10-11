@@ -27,6 +27,7 @@ android {
     kotlinOptions { jvmTarget = "17" }
     defaultConfig {
         applicationId = "com.nilebitlabs.dnbhomes"
+        manifestPlaceholders["homesLinkHost"] = System.getenv("HOMES_LINK_HOST") ?: "dnbhomeswebsite-psi.vercel.app"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -102,6 +103,20 @@ gradle.taskGraph.whenReady {
         check(uri != null && uri.userInfo == null && uri.query == null && uri.fragment == null && uri.path == "/api/v1" &&
             (if (localValidation) loopback && uri.scheme in listOf("http", "https") else uri.scheme == "https" && !reserved)) {
             "Production requires an explicit public HTTPS HOMES_API_URL ending /api/v1; placeholder/local defaults are forbidden"
+        }
+        if (!localValidation) {
+            val website = runCatching { URI(defines["HOMES_WEBSITE_URL"] ?: "") }.getOrNull()
+            val websiteHost = website?.host.orEmpty().lowercase()
+            check(website != null && website.scheme == "https" && websiteHost.contains(".") &&
+                !websiteHost.matches(Regex("[0-9.]+")) && !websiteHost.contains(":") &&
+                !websiteHost.matches(Regex(".*\\.(invalid|test|local|localhost|example)$")) &&
+                !websiteHost.matches(Regex("(^|.*\\.)example\\.(com|net|org)$")) &&
+                website.userInfo == null && website.query == null && website.fragment == null && website.path in listOf("", "/")) {
+                "Production requires an explicit public HTTPS HOMES_WEBSITE_URL origin"
+            }
+            check((System.getenv("HOMES_LINK_HOST") ?: "dnbhomeswebsite-psi.vercel.app") == websiteHost) {
+                "HOMES_LINK_HOST must match HOMES_WEBSITE_URL for production App Links"
+            }
         }
         if (localValidation) {
             check(!keystoreFile.exists() && defines["HOMES_BUILD_VALIDATION"] == "true") { "Local production validation must be explicitly marked and unsigned" }

@@ -1,3 +1,4 @@
+import 'core/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
@@ -65,7 +66,8 @@ class HomesApp extends StatelessWidget {
     final uri = Uri.tryParse(settings.name ?? '');
     if (uri == null ||
         ((uri.hasScheme || uri.hasAuthority) &&
-            (uri.scheme != 'https' || uri.host != 'dnbhomes.com'))) {
+            (uri.scheme != 'https' ||
+                uri.host != Uri.parse(AppConfig.websiteUrl).host))) {
       return null;
     }
     final segments = uri.pathSegments;

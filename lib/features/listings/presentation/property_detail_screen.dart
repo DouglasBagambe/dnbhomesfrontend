@@ -1,3 +1,4 @@
+import '../../../core/config/app_config.dart';
 import 'dart:async';
 
 import 'media_gallery.dart';
@@ -83,12 +84,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  Future<void> share(Property item) => SharePlus.instance.share(
-        ShareParams(
-          text: 'View ${item.title} on Homes\n'
-              'https://dnbhomes.com/properties/${item.slug}-${item.id}',
-        ),
-      );
+  Future<void> share(Property item) async {
+    final box = context.findRenderObject() as RenderBox?;
+    try {
+      await SharePlus.instance.share(ShareParams(
+        text:
+            'View ${item.title} on Homes\n${AppConfig.propertyUrl(item.slug, item.id)}',
+        sharePositionOrigin:
+            box == null ? null : box.localToGlobal(Offset.zero) & box.size,
+      ));
+    } catch (_) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Sharing is temporarily unavailable. Please try again.')),
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

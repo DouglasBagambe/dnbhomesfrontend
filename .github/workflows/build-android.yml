@@ -21,6 +21,7 @@ jobs:
         with: { flutter-version: "3.38.1", channel: stable, cache: true }
       - run: flutter pub get --enforce-lockfile
       - run: dart format --output=none --set-exit-if-changed lib test
+      - run: python3 scripts/test-ios-release.py
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug --flavor development --dart-define=HOMES_ENV=development --dart-define=HOMES_API_URL=http://10.0.2.2:3000/api/v1

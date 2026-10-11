@@ -1,3 +1,4 @@
+import '../../../core/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,11 +24,11 @@ class SimpleContentScreen extends StatelessWidget {
         ),
       ContentType.privacy => (
           'Privacy policy',
-          'Homes processes property discovery requests and the contact details you submit for viewing requests. Favorites and minimized viewing-request records are stored locally on this device. Full legal policy: https://dnbhomes.com/privacy',
+          'Homes processes property discovery requests and the contact details you submit for viewing requests. Favorites and minimized viewing-request records are stored locally on this device. Optional accounts synchronize Saved, Compare and account-owned Viewings. Account offers session revocation and deletion. Deletion erases synced account state and anonymizes associated operational viewing records. Verification/reset messages use a transactional email provider. Full policy: ${AppConfig.websiteUrl}/privacy',
         ),
       ContentType.terms => (
           'Terms of service',
-          'Homes connects property seekers with representatives. Listings and viewing requests do not guarantee availability, ownership, pricing, or confirmation. Full terms: https://dnbhomes.com/terms',
+          'Homes connects property seekers with representatives. Listings and viewing requests do not guarantee availability, ownership, pricing, or confirmation. Guest state is device-local; optional accounts sync supported state. Full terms: ${AppConfig.websiteUrl}/terms',
         ),
       ContentType.about => (
           'About Homes',

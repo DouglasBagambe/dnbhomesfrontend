@@ -109,3 +109,32 @@ iOS configuration targets iOS 13, uses private Keychain entitlements and keeps t
 existing bundle identifier. Actual Xcode signing, iPhone playback and device QA
 require a Mac and Apple hardware; Linux validation does not establish iOS release
 readiness. Hosted verification/reset requires an authenticated email provider.
+
+## Release closeout and canonical links
+
+Sharing now uses `HOMES_WEBSITE_URL`, defaulting to the actual hosted preview (`https://dnbhomeswebsite-psi.vercel.app`), rather than claiming the unpurchased domain is live. Android `HOMES_LINK_HOST` must match that origin at production build time. Set both to the purchased canonical domain later; no source edit is needed. Property links handle cold/warm launches, use the existing slug/ID API contract, and ordinary website access remains available. Website `ANDROID_APP_LINK_FINGERPRINTS` must use the **Play app signing** certificate, not the upload/debug certificate. Website `IOS_APP_LINK_TEAM_ID` enables the AASA property association only once a real Apple team exists.
+
+The iOS bundle identifier is `com.nilebitlabs.dnbhomes`, display name Homes, deployment target 13.0. ATS has no insecure exception. No camera/photo/location permission is requested. Keychain storage uses this-device accessibility; plugin privacy manifests describe SDK required-reason API uses. The app privacy manifest describes optional account contact/identity, viewing content and synced discovery interactions used for functionality, with no tracking. Confirm the final aggregated Xcode privacy report and App Store Data Privacy questionnaire on macOS against configured providers before submission.
+
+Xcode runs `scripts/validate-ios-release.py` before compiling a Release build: it requires production environment and explicit public HTTPS API/website URLs and refuses validation artifacts. Native Flutter deep linking is enabled; entitlements use `applinks:$(HOMES_LINK_HOST)` (actual preview by default). Set the Xcode `HOMES_LINK_HOST` build setting to the canonical domain before signing. There is no paid Apple team ID in Git. On macOS, use `flutter build ipa --release --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL="$HOMES_API_URL" --dart-define=HOMES_WEBSITE_URL="$HOMES_WEBSITE_URL"`; configure the real development team/signing/profile in Xcode. Linux tests validate repository config/guards; they do not prove an iOS build or physical Safari/iPhone behavior. H.264 MP4 is the broadly supported production video format; arbitrary WebM codec support is platform-dependent and fails gracefully.
+
+One-time Douglas-controlled Android upload key, stored privately outside the repository:
+
+```bash
+mkdir -p "$HOME/.local/share/homes-signing"
+chmod 700 "$HOME/.local/share/homes-signing"
+keytool -genkeypair -v -keystore "$HOME/.local/share/homes-signing/homes-upload.jks" -alias homes-upload -keyalg RSA -keysize 3072 -validity 10000
+```
+
+Create ignored `android/key.properties` with `storeFile` (absolute keystore path), `storePassword`, `keyAlias=homes-upload`, and `keyPassword`; set its mode to 600 and keep an encrypted backup of the keystore/password. Never commit either file. Choose the next unused Play build number. With real public endpoints and signing configured:
+
+```bash
+export HOMES_API_URL=https://YOUR_REAL_API_HOST/api/v1
+export HOMES_WEBSITE_URL=https://YOUR_CANONICAL_WEBSITE_HOST
+export HOMES_LINK_HOST=YOUR_CANONICAL_WEBSITE_HOST
+unset HOMES_BUILD_PROFILE
+flutter build apk --release --flavor production --build-number=NEXT_UNUSED_INTEGER --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL="$HOMES_API_URL" --dart-define=HOMES_WEBSITE_URL="$HOMES_WEBSITE_URL"
+flutter build appbundle --release --flavor production --build-number=NEXT_UNUSED_INTEGER --dart-define=HOMES_ENV=production --dart-define=HOMES_API_URL="$HOMES_API_URL" --dart-define=HOMES_WEBSITE_URL="$HOMES_WEBSITE_URL"
+```
+
+The placeholders above must be replaced with actual configuration; they are not active domain claims. Unsigned local validation AABs are intentionally non-runnable and unsuitable for distribution. CI checks all embedded ELF/ZIP alignment for 16-KB compatibility. Keep debug/profile phone QA separate from production signing.

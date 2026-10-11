@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homes/app.dart';
+import 'package:homes/core/config/app_config.dart';
 import 'package:homes/core/network/api_client.dart';
 import 'package:homes/features/listings/presentation/property_detail_screen.dart';
 import 'package:http/http.dart' as http;
@@ -48,7 +49,7 @@ void main() {
     );
   });
 
-  for (final route in [path, 'https://dnbhomes.com$path']) {
+  for (final route in [path, '${AppConfig.websiteUrl}$path']) {
     testWidgets('cold launch opens shared property $route', (tester) async {
       tester.binding.platformDispatcher.defaultRouteNameTestValue = route;
       addTearDown(
