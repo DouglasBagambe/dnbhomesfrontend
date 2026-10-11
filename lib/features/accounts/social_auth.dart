@@ -17,9 +17,9 @@ class ConsumerSocialAuth {
   Future<void> signIn(ConsumerSocialProvider provider, {bool link = false}) async {
     switch (provider) {
       case ConsumerSocialProvider.google:
-        await _google(link: link);
+        return _google(link: link);
       case ConsumerSocialProvider.apple:
-        await _apple(link: link);
+        return _apple(link: link);
     }
   }
 
