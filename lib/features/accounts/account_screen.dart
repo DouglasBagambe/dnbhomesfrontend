@@ -302,34 +302,55 @@ class _AccountScreenState extends State<AccountScreen> {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (google) ...[
-            const SizedBox(height: 20),
-            OutlinedButton(
-              onPressed:
-                  busy ? null : () => social(ConsumerSocialProvider.google),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(52),
-                backgroundColor:
-                    Theme.of(context).brightness == Brightness.light
-                        ? Colors.white
-                        : null,
-              ),
-              child: const Text('Continue with Google'),
-            ),
-          ],
-          if (apple) ...[
-            const SizedBox(height: 10),
-            SizedBox(
-              height: 52,
-              child: SignInWithAppleButton(
-                onPressed:
-                    busy ? null : () => social(ConsumerSocialProvider.apple),
-                style: Theme.of(context).brightness == Brightness.dark
-                    ? SignInWithAppleButtonStyle.white
-                    : SignInWithAppleButtonStyle.black,
-                text: 'Continue with Apple',
-              ),
-            ),
+          if (google || apple) ...[
+            Text('Continue with',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              if (google)
+                Column(children: [
+                  IconButton(
+                      key: const ValueKey('continue-google'),
+                      tooltip: 'Continue with Google',
+                      onPressed: busy
+                          ? null
+                          : () => social(ConsumerSocialProvider.google),
+                      style: IconButton.styleFrom(
+                          fixedSize: const Size(56, 56),
+                          backgroundColor: Colors.white,
+                          side: BorderSide(
+                              color: Theme.of(context).dividerColor)),
+                      icon: Image.asset('assets/icons/google-sign-in.png',
+                          width: 24, height: 24)),
+                  const SizedBox(height: 6),
+                  Text('Google', style: Theme.of(context).textTheme.bodySmall),
+                ]),
+              if (google && apple) const SizedBox(width: 24),
+              if (apple)
+                Column(children: [
+                  IconButton(
+                    key: const ValueKey('continue-apple'),
+                    tooltip: 'Continue with Apple',
+                    onPressed: busy
+                        ? null
+                        : () => social(ConsumerSocialProvider.apple),
+                    style: IconButton.styleFrom(
+                        fixedSize: const Size(56, 56),
+                        backgroundColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : Colors.black,
+                        foregroundColor:
+                            Theme.of(context).brightness == Brightness.dark
+                                ? Colors.black
+                                : Colors.white),
+                    icon: const Icon(Icons.apple, size: 28),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('Apple', style: Theme.of(context).textTheme.bodySmall),
+                ]),
+            ]),
           ],
           if (google || apple) const _OrDivider(),
           FilledButton(
@@ -765,7 +786,7 @@ class _SignedOutHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             switch (mode) {
-              AccountMode.welcome => 'Keep your place with you.',
+              AccountMode.welcome => "Let's find you a home.",
               AccountMode.register => 'Create your Homes account.',
               AccountMode.signIn => 'Welcome back.',
               AccountMode.verify => 'Check your inbox.',

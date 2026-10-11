@@ -101,12 +101,12 @@ void main() {
           child:
               MaterialApp(theme: AppTheme.light, home: const AccountScreen())));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue with Google'));
+      await tester.tap(find.byKey(const ValueKey('continue-google')));
       await tester.pumpAndSettle();
       expect(find.text('Google sign-in will be available at launch.'),
           findsOneWidget);
-      await tester.ensureVisible(find.text('Continue with Apple'));
-      await tester.tap(find.text('Continue with Apple'));
+      await tester.ensureVisible(find.byKey(const ValueKey('continue-apple')));
+      await tester.tap(find.byKey(const ValueKey('continue-apple')));
       await tester.pumpAndSettle();
       await tester.drag(find.byType(ListView), const Offset(0, 1000));
       await tester.pumpAndSettle();
@@ -133,9 +133,9 @@ void main() {
                 home:
                     RepaintBoundary(key: key, child: const AccountScreen()))));
         await tester.pumpAndSettle();
-        expect(find.text('Keep your place with you.'), findsOneWidget);
-        expect(find.text('Continue with Google'), findsNothing);
-        expect(find.text('Continue with Apple'), findsNothing);
+        expect(find.text("Let's find you a home."), findsOneWidget);
+        expect(find.byKey(const ValueKey('continue-google')), findsNothing);
+        expect(find.byKey(const ValueKey('continue-apple')), findsNothing);
         expect(find.text('Continue as guest'), findsOneWidget);
         expect(tester.takeException(), isNull);
         final output = Platform.environment['HOMES_ACCOUNT_CAPTURE_DIR'];

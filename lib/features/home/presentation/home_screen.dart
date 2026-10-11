@@ -240,7 +240,7 @@ class _HeroState extends State<_Hero> {
                           children: [
                             const Icon(Icons.home_work_outlined, size: 36),
                             const SizedBox(height: 24),
-                            Text('Find your place\nin Uganda.',
+                            Text("Let's find you\na home.",
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                                 style:
@@ -301,8 +301,7 @@ class _HeroState extends State<_Hero> {
                                                         fontWeight:
                                                             FontWeight.w600)),
                                                 const SizedBox(height: 16),
-                                                Text(
-                                                    'Find your place\nin Uganda.',
+                                                Text("Let's find you\na home.",
                                                     maxLines: 3,
                                                     overflow:
                                                         TextOverflow.ellipsis,
