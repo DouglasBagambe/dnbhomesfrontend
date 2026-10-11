@@ -17,6 +17,14 @@ class AppConfig {
     'HOMES_WEBSITE_URL',
     defaultValue: 'https://dnbhomeswebsite-psi.vercel.app',
   );
+  static const String googleWebClientId =
+      String.fromEnvironment('HOMES_GOOGLE_WEB_CLIENT_ID');
+  static const String googleIosClientId =
+      String.fromEnvironment('HOMES_GOOGLE_IOS_CLIENT_ID');
+  static const String appleServiceId =
+      String.fromEnvironment('HOMES_APPLE_SERVICE_ID');
+  static const String appleRedirectUri =
+      String.fromEnvironment('HOMES_APPLE_REDIRECT_URI');
   static String propertyUrl(String slug, String id) =>
       Uri.parse(websiteUrl).resolve('/properties/$slug-$id').toString();
   static const String sentryDsn = String.fromEnvironment('SENTRY_DSN');
