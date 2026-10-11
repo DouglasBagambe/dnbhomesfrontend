@@ -12,7 +12,26 @@ root = ET.parse(manifest).getroot()
 android = '{http://schemas.android.com/apk/res/android}'
 assert root.attrib['package'] == 'com.nilebitlabs.dnbhomes'
 assert root.find('uses-sdk').attrib[android + 'targetSdkVersion'] == '36'
-assert {item.attrib[android + 'name'] for item in root.findall('uses-permission')} == {'android.permission.INTERNET', 'android.permission.ACCESS_NETWORK_STATE', 'com.nilebitlabs.dnbhomes.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'}
+permissions = {item.attrib[android + 'name'] for item in root.findall('uses-permission')}
+required_permissions = {
+    'android.permission.INTERNET',
+    'android.permission.ACCESS_NETWORK_STATE',
+    'com.nilebitlabs.dnbhomes.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION',
+}
+assert required_permissions <= permissions, ('Missing required permission', required_permissions - permissions)
+forbidden_permissions = {
+    'android.permission.READ_CONTACTS',
+    'android.permission.WRITE_CONTACTS',
+    'android.permission.READ_SMS',
+    'android.permission.SEND_SMS',
+    'android.permission.RECORD_AUDIO',
+    'android.permission.CAMERA',
+    'android.permission.READ_CALL_LOG',
+    'android.permission.WRITE_CALL_LOG',
+    'android.permission.ACCESS_FINE_LOCATION',
+    'android.permission.ACCESS_COARSE_LOCATION',
+}
+assert not (permissions & forbidden_permissions), ('Unexpected sensitive permission', permissions & forbidden_permissions)
 assert root.find('application').attrib.get(android + 'usesCleartextTraffic') != 'true'
 rows = []
 with ZipFile(aab) as archive:
