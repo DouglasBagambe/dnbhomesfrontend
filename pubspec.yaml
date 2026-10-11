@@ -118,13 +118,14 @@ flutter_icons:
     generate: false
 
 flutter_native_splash:
-  color: "#F7F8F6"
-  color_dark: "#101512"
-  image: assets/images/dnblogolight-removebg-preview.png
-  image_dark: assets/images/dnblogdark-removebg-preview.png
+  color: "#ffffff"
+  color_dark: "#1f1e20"
   android: true
   ios: true
+  web: false
+  # Android 12+ owns its system launch icon; the approved vector opening starts
+  # at Flutter's first frame. Older Android/iOS launch backgrounds stay blank.
   android_12:
-    color: "#F7F8F6"
-    color_dark: "#101512"
+    color: "#ffffff"
+    color_dark: "#1f1e20"
     image: assets/icons/dnb_icon_foreground.png

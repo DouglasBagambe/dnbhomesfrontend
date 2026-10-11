@@ -4,6 +4,8 @@ import importlib.util
 from pathlib import Path
 import plistlib
 import unittest
+import json
+import xml.etree.ElementTree as ET
 
 repo = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('guard', repo / 'scripts/validate-ios-release.py')
@@ -34,5 +36,16 @@ class IOSReleaseTests(unittest.TestCase):
         privacy = plistlib.loads((repo / 'ios/Runner/PrivacyInfo.xcprivacy').read_bytes())
         self.assertFalse(privacy['NSPrivacyTracking'])
         self.assertTrue(privacy['NSPrivacyCollectedDataTypes'])
+
+    def test_native_launch_bridge(self):
+        storyboard = ET.parse(repo / 'ios/Runner/Base.lproj/LaunchScreen.storyboard')
+        self.assertEqual(storyboard.findall('.//imageView'), [])
+        self.assertEqual(storyboard.find('.//color[@key="backgroundColor"]').get('name'), 'HomesLaunchBackground')
+        colors = json.loads((repo / 'ios/Runner/Assets.xcassets/HomesLaunchBackground.colorset/Contents.json').read_text())['colors']
+        self.assertEqual(len(colors), 2)
+        for folder in ['drawable', 'drawable-v21', 'drawable-night', 'drawable-night-v21']:
+            launch = ET.parse(repo / f'android/app/src/main/res/{folder}/launch_background.xml')
+            self.assertEqual(launch.findall('.//bitmap'), [])
+            self.assertEqual(launch.find('item').get('{http://schemas.android.com/apk/res/android}drawable'), '@color/homes_launch_background')
 
 if __name__ == '__main__': unittest.main()

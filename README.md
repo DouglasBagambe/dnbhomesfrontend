@@ -105,8 +105,8 @@ details. Only the active video allocates a player, starts on explicit muted play
 and pauses when backgrounded or leaving its route. Images use bounded decoding.
 The test matrix covers phones/tablets, both themes and text scales up to 1.6.
 
-iOS configuration targets iOS 13, uses private Keychain entitlements and keeps the
-existing bundle identifier. Actual Xcode signing, iPhone playback and device QA
+iOS configuration targets iOS 13, uses private Keychain entitlements with bundle identifier
+`com.nilebitlabs.dnbhomes`. Actual Xcode signing, iPhone playback and device QA
 require a Mac and Apple hardware; Linux validation does not establish iOS release
 readiness. Hosted verification/reset requires an authenticated email provider.
 
@@ -148,7 +148,7 @@ Saved/Compare/Viewings restoration, then fades out in 180ms. If local bootstrap
 runs longer, it holds the completed composition without repainting or replaying.
 Optional account network synchronization remains in the background; it does not
 extend the splash. Navigation, property/media loading and all ordinary loading
-indicators are unchanged. A single bounded controller is disposed after use.
+indicators are unchanged. A single bounded controller is disposed with its startup boundary.
 
 The supplied SVG strings are parsed directly (including the elliptical O arcs),
 with cached PathMetrics and normalized 1.02-to-zero draw behavior. Flutter's SVG
@@ -156,3 +156,10 @@ arc parser normalizes arcs to cubic segments, a vector-platform representation
 rather than a manual redraw. Timings, cubic curves, word transform, gap overlays,
 settle origin and colors match the approved HTML. `disableAnimations` displays
 the completed composition with a 150ms opacity fade, without stroke drawing.
+
+The native launch bridge uses matching white / #1f1e20 backgrounds without the
+previous duplicate bitmap logo on Android before 12 and iOS. Android 12+ requires
+an OS-managed static launch icon before Flutter can render; this remains the
+existing app icon. The approved vector animation starts at Flutter's first
+frame. Native dark-mode resolution uses the OS theme until saved app preferences
+can be restored. No native animation or substitute wordmark is introduced.
