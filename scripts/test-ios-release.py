@@ -14,9 +14,22 @@ spec.loader.exec_module(guard)
 
 class IOSReleaseTests(unittest.TestCase):
     def config(self, **patch):
-        values = {'HOMES_ENV':'production', 'HOMES_API_URL':'https://api.homes-fixture.co.ug/api/v1', 'HOMES_WEBSITE_URL':'https://homes-fixture.co.ug'}
+        values = {
+            'HOMES_ENV':'production',
+            'HOMES_API_URL':'https://api.homes-fixture.co.ug/api/v1',
+            'HOMES_WEBSITE_URL':'https://homes-fixture.co.ug',
+            'HOMES_GOOGLE_WEB_CLIENT_ID':'web-client',
+            'HOMES_GOOGLE_IOS_CLIENT_ID':'ios-client',
+            'HOMES_APPLE_SERVICE_ID':'homes.apple.service',
+            'HOMES_APPLE_REDIRECT_URI':'https://api.homes-fixture.co.ug/api/v1/consumer/apple/callback/production',
+        }
         values.update(patch)
-        return {'CONFIGURATION':'Release', 'HOMES_LINK_HOST':'homes-fixture.co.ug', 'DART_DEFINES':','.join(base64.b64encode(f'{key}={value}'.encode()).decode() for key,value in values.items())}
+        return {
+            'CONFIGURATION':'Release',
+            'HOMES_LINK_HOST':'homes-fixture.co.ug',
+            'HOMES_GOOGLE_REVERSED_CLIENT_ID':'com.googleusercontent.apps.1234567890-homes',
+            'DART_DEFINES':','.join(base64.b64encode(f'{key}={value}'.encode()).decode() for key,value in values.items()),
+        }
     def test_release_guard(self):
         guard.validate(self.config())
         for patch in [{'HOMES_ENV':'development'}, {'HOMES_API_URL':'http://127.0.0.1/api/v1'}, {'HOMES_WEBSITE_URL':''}, {'HOMES_BUILD_VALIDATION':'true'}, {'HOMES_API_URL':'https://api.example.com/api/v1'}]:
@@ -26,9 +39,12 @@ class IOSReleaseTests(unittest.TestCase):
         self.assertEqual(info['CFBundleDisplayName'],'Homes')
         self.assertNotIn('NSAppTransportSecurity',info)
         self.assertNotIn('NSCameraUsageDescription',info)
+        schemes = info['CFBundleURLTypes'][0]['CFBundleURLSchemes']
+        self.assertEqual(schemes, ['$(HOMES_GOOGLE_REVERSED_CLIENT_ID)'])
         for name in ['DebugProfile','Release']:
             entitlements = plistlib.loads((repo / f'ios/Runner/{name}.entitlements').read_bytes())
             self.assertEqual(entitlements['com.apple.developer.associated-domains'],['applinks:$(HOMES_LINK_HOST)'])
+            self.assertEqual(entitlements['com.apple.developer.applesignin'], ['Default'])
         project = (repo / 'ios/Runner.xcodeproj/project.pbxproj').read_text()
         self.assertNotIn('com.uganda.rent',project)
         self.assertIn('validate-ios-release.py',project)
