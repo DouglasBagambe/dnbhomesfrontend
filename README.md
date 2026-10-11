@@ -110,6 +110,30 @@ iOS configuration targets iOS 13, uses private Keychain entitlements with bundle
 require a Mac and Apple hardware; Linux validation does not establish iOS release
 readiness. Hosted verification/reset requires an authenticated email provider.
 
+### Consumer Google and Apple sign-in
+
+Social providers are production capabilities, not baked credentials. The app renders Google/Apple actions only when the Backend capabilities endpoint reports that provider enabled and the matching build input is present.
+
+Google:
+- `HOMES_GOOGLE_WEB_CLIENT_ID` is the backend/server OAuth audience used by Android and iOS ID tokens.
+- `HOMES_GOOGLE_IOS_CLIENT_ID` is the iOS OAuth client ID.
+- Android must register both `com.nilebitlabs.dnbhomes` and the staging package with their actual signing certificate SHA-1/SHA-256 values in the Google project.
+- iOS additionally requires the Google `REVERSED_CLIENT_ID` as Xcode build setting `HOMES_GOOGLE_REVERSED_CLIENT_ID`; `Info.plist` already references that build setting, so no source edit is required.
+
+Apple:
+- `HOMES_APPLE_SERVICE_ID` is the Apple Services ID used by Website/Android.
+- `HOMES_APPLE_REDIRECT_URI` is the public HTTPS Backend callback, ending in `/api/v1/consumer/apple/callback/production` for production or `/staging` for staging.
+- Native iOS uses bundle ID `com.nilebitlabs.dnbhomes`; Sign in with Apple entitlement is already present.
+- The Backend validates both the Services ID and native bundle-ID audiences. Configure the Apple App ID/Services ID, domain/return URLs and server client-secret JWT externally.
+
+A production Android build must include:
+`--dart-define=HOMES_GOOGLE_WEB_CLIENT_ID=...`,
+`--dart-define=HOMES_APPLE_SERVICE_ID=...` and
+`--dart-define=HOMES_APPLE_REDIRECT_URI=...`.
+A production iOS build additionally includes `--dart-define=HOMES_GOOGLE_IOS_CLIENT_ID=...` and the Xcode `HOMES_GOOGLE_REVERSED_CLIENT_ID` build setting. Release guards fail closed when these inputs are incomplete. Provider secrets/private keys never belong in the mobile app.
+
+Same-email identities are not silently merged. If Google or Apple matches an existing Homes email, the user signs in with an already-connected method, then explicitly connects the provider from Security. Signed-in Saved, Compare, recent activity, viewing history/status and profile data remain server-synchronized; guest state is merged after authentication without claiming guest viewings unless their original secure ownership token is present.
+
 ## Release closeout and canonical links
 
 Sharing now uses `HOMES_WEBSITE_URL`, defaulting to the actual hosted preview (`https://dnbhomeswebsite-psi.vercel.app`), rather than claiming the unpurchased domain is live. Android `HOMES_LINK_HOST` must match that origin at production build time. Set both to the purchased canonical domain later; no source edit is needed. Property links handle cold/warm launches, use the existing slug/ID API contract, and ordinary website access remains available. Website `ANDROID_APP_LINK_FINGERPRINTS` must use the **Play app signing** certificate, not the upload/debug certificate. Website `IOS_APP_LINK_TEAM_ID` enables the AASA property association only once a real Apple team exists.
