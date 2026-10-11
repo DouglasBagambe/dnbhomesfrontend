@@ -49,6 +49,28 @@ void main() {
             return http.Response(
                 jsonEncode({'token': 'ignored-unsigned-body-token'}), 200,
                 headers: {'set-auth-token': 'private-session.signed-header'});
+          if (path.endsWith('/consumer/capabilities'))
+            return http.Response(
+                jsonEncode({
+                  'data': {
+                    'accounts': true,
+                    'providers': {'google': false, 'apple': false},
+                    'sync': {
+                      'saved': true,
+                      'compare': true,
+                      'recent': true,
+                      'viewings': true,
+                      'profile': true
+                    }
+                  }
+                }),
+                200);
+          if (path.endsWith('/auth/consumer/list-accounts'))
+            return http.Response(
+                jsonEncode([
+                  {'id': 'credential-qa', 'providerId': 'credential'}
+                ]),
+                200);
           if (path.contains('/auth/consumer/')) return http.Response('{}', 200);
           if (path.endsWith('/me'))
             return http.Response(
