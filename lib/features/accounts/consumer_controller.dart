@@ -208,8 +208,7 @@ class ConsumerController extends ChangeNotifier {
       changed();
       return;
     }
-    final result = await api.getJson('/auth/consumer/list-accounts');
-    final items = (result['data'] ?? result) as List? ?? const [];
+    final items = await api.getList('/auth/consumer/list-accounts');
     linkedAccounts = items
         .whereType<Map>()
         .map((item) => ConsumerLinkedAccount(
