@@ -174,8 +174,8 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(profile.name,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.w700)),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w700)),
                           const SizedBox(height: 4),
                           Text(profile.email,
                               style: Theme.of(context).textTheme.bodySmall),

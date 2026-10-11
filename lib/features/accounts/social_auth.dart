@@ -14,7 +14,8 @@ class ConsumerSocialAuth {
   final ApiClient api;
   bool _googleInitialized = false;
 
-  Future<void> signIn(ConsumerSocialProvider provider, {bool link = false}) async {
+  Future<void> signIn(ConsumerSocialProvider provider,
+      {bool link = false}) async {
     switch (provider) {
       case ConsumerSocialProvider.google:
         return _google(link: link);
