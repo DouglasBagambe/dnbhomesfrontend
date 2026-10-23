@@ -2,8 +2,11 @@ import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homes/app.dart';
+import 'package:homes/core/state/theme_controller.dart';
+import 'package:provider/provider.dart';
 import 'package:homes/core/network/api_client.dart';
 import 'package:homes/features/tours/tours_screen.dart';
 import 'package:homes/features/tours/tour_video.dart';
@@ -126,6 +129,19 @@ void main() {
           final picker = find.byType(TextField).hitTestable().last;
           expect(Theme.of(tester.element(picker)).brightness,
               dark ? Brightness.dark : Brightness.light);
+          final theme =
+              tester.element(find.byType(ToursScreen)).read<ThemeController>();
+          await theme.setMode(dark ? ThemeMode.light : ThemeMode.dark);
+          await tester.pump(const Duration(milliseconds: 300));
+          await ticks(tester);
+          final heading = tester.renderObject<RenderParagraph>(
+              find.text('Where would you like to explore?'));
+          expect(heading.text.style?.color,
+              Theme.of(tester.element(picker)).textTheme.bodyMedium?.color,
+              reason:
+                  'The heading must inherit the sheet theme, not Tours media chrome');
+          await theme.setMode(dark ? ThemeMode.dark : ThemeMode.light);
+          await tester.pump(const Duration(milliseconds: 300));
           tester.view.viewInsets = const FakeViewPadding(bottom: 180);
           await tester.pump();
           expect(tester.takeException(), isNull);

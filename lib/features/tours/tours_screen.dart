@@ -80,9 +80,12 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
         backgroundColor: appTheme.colorScheme.surface,
         builder: (_) => Theme(
             data: appTheme,
-            child: _LocationPicker(
-                locations: feed.locations.values.toList(),
-                selected: feed.location)));
+            child: DefaultTextStyle(
+                style: appTheme.textTheme.bodyMedium ??
+                    TextStyle(color: appTheme.colorScheme.onSurface),
+                child: _LocationPicker(
+                    locations: feed.locations.values.toList(),
+                    selected: feed.location))));
     if (!mounted) return;
     setState(() => covered = false);
     if (selected == null) return;
