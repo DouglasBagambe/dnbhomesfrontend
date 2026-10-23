@@ -1,3 +1,4 @@
+import '../../../core/widgets/brand_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -55,6 +56,7 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
   }
 
   Future<void> submit() async {
+    if (submitting || !widget.property.canRequestViewing) return;
     if (!form.currentState!.validate()) return;
     setState(() => submitting = true);
     try {
@@ -249,13 +251,17 @@ class _ViewingRequestScreenState extends State<ViewingRequestScreen> {
             ),
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: submitting ? null : submit,
+              onPressed: submitting || !widget.property.canRequestViewing
+                  ? null
+                  : submit,
               child: submitting
                   ? const SizedBox.square(
                       dimension: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: BrandLoading(size: 20),
                     )
-                  : const Text('Request this viewing'),
+                  : Text(widget.property.canRequestViewing
+                      ? 'Request this viewing'
+                      : 'Viewings unavailable'),
             ),
           ],
         ),

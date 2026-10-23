@@ -186,10 +186,19 @@ void main() {
           await tester.pumpWidget(HomesApp(apiClient: api));
           await tester.pumpAndSettle();
           expect(tester.takeException(), isNull);
-          for (final destination in ['Discover', 'Saved', 'Viewings', 'Home']) {
+          for (final destination in ['Discover', 'Saved', 'Account', 'Home']) {
             await tester.tap(find.text(destination).last);
             await tester.pumpAndSettle();
             expect(tester.takeException(), isNull);
+            if (destination == 'Account') {
+              await tester.scrollUntilVisible(find.text('Viewings'), 180,
+                  scrollable: find.byType(Scrollable).last);
+              await tester.tap(find.text('Viewings'));
+              await tester.pumpAndSettle();
+              expect(tester.takeException(), isNull);
+              await tester.pageBack();
+              await tester.pumpAndSettle();
+            }
           }
           await tester.tap(find.text('Compare 2 homes'));
           await tester.pumpAndSettle();

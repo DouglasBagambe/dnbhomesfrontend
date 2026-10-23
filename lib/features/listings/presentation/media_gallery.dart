@@ -1,3 +1,4 @@
+import '../../../core/widgets/brand_loading.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
@@ -295,7 +296,7 @@ class _MediaVideoState extends State<_MediaVideo>
     return ColoredBox(
         color: Colors.black,
         child: loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: BrandLoading(color: Colors.white))
             : player == null
                 ? retry()
                 : ValueListenableBuilder<VideoPlayerValue>(

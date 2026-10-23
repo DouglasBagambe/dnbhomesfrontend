@@ -1,3 +1,4 @@
+import '../../core/widgets/states.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../listings/data/listings_repository.dart';
@@ -38,8 +39,7 @@ class _RecentHomesScreenState extends State<RecentHomesScreen> {
                     onPressed: () => setState(() => homes = load()),
                     child: const Text('Retry'))
               ]));
-            if (!snapshot.hasData)
-              return const Center(child: CircularProgressIndicator());
+            if (!snapshot.hasData) return const PropertyListSkeleton();
             final items = snapshot.data!;
             if (items.isEmpty)
               return const Center(

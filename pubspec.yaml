@@ -69,6 +69,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^3.0.1
   mockito: ^5.4.3
+  flutter_cache_manager: 3.4.1 # Offline image fixture for Tours UI tests.
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -125,9 +126,9 @@ flutter_native_splash:
   android: true
   ios: true
   web: false
-  # Android 12+ owns its system launch icon; the approved vector opening starts
-  # at Flutter's first frame. Older Android/iOS launch backgrounds stay blank.
+  # Keep native backgrounds plain; the animated Flutter loader owns the logo.
+  # After regenerating resources, retain @drawable/launch_empty_icon in both
+  # Android 12 styles to suppress the OS default static launcher icon.
   android_12:
     color: "#ffffff"
     color_dark: "#1f1e20"
-    image: assets/icons/dnb_icon_foreground.png

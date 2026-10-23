@@ -135,9 +135,12 @@ class SignaturePainter extends CustomPainter {
       {required this.milliseconds,
       required this.dark,
       this.reduced = false,
-      this.opacity = 1});
+      this.opacity = 1,
+      this.markOnly = false,
+      this.color});
   final double milliseconds, opacity;
-  final bool dark, reduced;
+  final bool dark, reduced, markOnly;
+  final Color? color;
   static final _paths = signaturePaths.map((data) {
     final receiver = _PathReceiver();
     writeSvgPathDataToPath(data, receiver);
@@ -176,7 +179,8 @@ class SignaturePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final ink = dark ? const Color(0xfffafafa) : const Color(0xff222222);
+    final ink =
+        color ?? (dark ? const Color(0xfffafafa) : const Color(0xff222222));
     final background = dark ? const Color(0xff1f1e20) : Colors.white;
     final paint = Paint()
       ..style = PaintingStyle.stroke
@@ -185,8 +189,13 @@ class SignaturePainter extends CustomPainter {
       ..color = ink
       ..strokeWidth = 48;
     canvas.save();
-    canvas.scale(size.width / 684);
-    canvas.translate(-170, -250);
+    if (markOnly) {
+      canvas.scale(size.width / 540);
+      canvas.translate(-244, -244);
+    } else {
+      canvas.scale(size.width / 684);
+      canvas.translate(-170, -250);
+    }
     canvas.saveLayer(const Rect.fromLTWH(170, 250, 684, 700),
         Paint()..color = Colors.white.withValues(alpha: opacity));
     final settle = .994 + .006 * _progress(3700, 380, _easeOut);
@@ -196,25 +205,28 @@ class SignaturePainter extends CustomPainter {
     _draw(canvas, 0, paint, _progress(100, 1300, _markCurve));
     final gaps = _progress(1300, 240, _easeOut);
     if (gaps > 0) {
-      canvas.saveLayer(const Rect.fromLTWH(170, 250, 684, 700),
-          Paint()..color = Colors.white.withValues(alpha: gaps));
+      if (!markOnly)
+        canvas.saveLayer(const Rect.fromLTWH(170, 250, 684, 700),
+            Paint()..color = Colors.white.withValues(alpha: gaps));
       paint
         ..color = background
+        ..blendMode = markOnly ? BlendMode.clear : BlendMode.srcOver
         ..strokeWidth = 76;
       canvas.drawPath(_paths[1], paint);
       canvas.drawPath(_paths[2], paint);
       paint
         ..color = ink
+        ..blendMode = BlendMode.srcOver
         ..strokeWidth = 48;
       canvas.drawPath(_paths[3], paint);
       canvas.drawPath(_paths[4], paint);
-      canvas.restore();
+      if (!markOnly) canvas.restore();
     }
     canvas.save();
     canvas.translate(354, 812);
     canvas.scale(.6);
     paint.strokeWidth = 12;
-    for (var i = 0; i < 8; i++) {
+    for (var i = 0; !markOnly && i < 8; i++) {
       _draw(
           canvas,
           i + 5,
@@ -232,5 +244,7 @@ class SignaturePainter extends CustomPainter {
       milliseconds != old.milliseconds ||
       dark != old.dark ||
       reduced != old.reduced ||
-      opacity != old.opacity;
+      opacity != old.opacity ||
+      markOnly != old.markOnly ||
+      color != old.color;
 }

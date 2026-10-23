@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/network/api_client.dart';
+import '../../core/config/runtime_config.dart';
 import '../favorites/favorites_controller.dart';
 import '../compare/compare_controller.dart';
 import '../bookings/bookings_controller.dart';
@@ -77,6 +78,7 @@ class ConsumerController extends ChangeNotifier {
   bool googleAvailable = false;
   bool appleAvailable = false;
   bool capabilitiesReachable = true;
+  RuntimeConfig runtime = const RuntimeConfig();
   bool viewingUpdates = true;
   List<ViewingRequest> viewings = [];
   List<ConsumerLinkedAccount> linkedAccounts = [];
@@ -127,6 +129,9 @@ class ConsumerController extends ChangeNotifier {
     final result = await api.getJson('/consumer/capabilities');
     final data = result['data'] as Map<String, dynamic>? ?? const {};
     final providers = data['providers'] as Map? ?? const {};
+    runtime = RuntimeConfig.fromJson(
+        data['mobile'] is Map ? data['mobile'] as Map : const {});
+    socialAuth.runtime = runtime;
     accountsAvailable = data['accounts'] == true;
     googleAvailable = accountsAvailable && providers['google'] == true;
     appleAvailable = accountsAvailable && providers['apple'] == true;

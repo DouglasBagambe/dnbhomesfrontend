@@ -1,3 +1,4 @@
+import '../../../core/widgets/brand_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,8 @@ class BookingsScreen extends StatelessWidget {
     ];
     final upcoming = requests.where((item) => item.isUpcoming).toList();
     final past = requests.where((item) => !upcoming.contains(item)).toList();
-    return SafeArea(
+    return Scaffold(
+        body: SafeArea(
       child: DefaultTabController(
         length: 2,
         child: Column(
@@ -35,6 +37,7 @@ class BookingsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(children: [
+                    if (Navigator.canPop(context)) const BackButton(),
                     Expanded(
                         child: Text('Viewing requests',
                             style: Theme.of(context).textTheme.headlineMedium)),
@@ -85,10 +88,10 @@ class BookingsScreen extends StatelessWidget {
             Expanded(
               child: TabBarView(
                 children: [
-                  RefreshIndicator(
+                  BrandRefreshIndicator(
                       onRefresh: () => _refresh(context),
                       child: _list(context, upcoming, true)),
-                  RefreshIndicator(
+                  BrandRefreshIndicator(
                       onRefresh: () => _refresh(context),
                       child: _list(context, past, false)),
                 ],
@@ -97,7 +100,7 @@ class BookingsScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 
   Future<void> _refresh(BuildContext context) async {
@@ -156,19 +159,15 @@ class BookingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.reference,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ),
-                    Text(titleCase(item.status),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary)),
-                  ],
-                ),
+                Text(item.reference,
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 4),
+                Text(
+                    item.status == 'pending'
+                        ? 'Awaiting confirmation'
+                        : titleCase(item.status),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.primary)),
                 if (item.propertyTitle.isNotEmpty)
                   Padding(
                       padding: const EdgeInsets.only(top: 8),

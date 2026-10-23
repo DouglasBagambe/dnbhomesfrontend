@@ -90,7 +90,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: const Text('Refresh failed. Saved homes kept. Retry')),
         Expanded(
             child: loading && items.isEmpty
-                ? const Center(child: CircularProgressIndicator())
+                ? const PropertyListSkeleton()
                 : failure != null && items.isEmpty
                     ? AppErrorState(
                         message: failure!.message,

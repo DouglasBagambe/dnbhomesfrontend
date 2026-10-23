@@ -76,8 +76,8 @@ class _AccountScreenState extends State<AccountScreen> {
       {bool link = false}) async {
     final account = context.read<ConsumerController>();
     final clientId = provider == ConsumerSocialProvider.google
-        ? AppConfig.googleWebClientId
-        : AppConfig.appleServiceId;
+        ? account.socialAuth.googleClientId
+        : account.socialAuth.appleClientId;
     if (AppConfig.isPreviewProvider(clientId)) {
       setState(() {
         error = null;
@@ -294,11 +294,10 @@ class _AccountScreenState extends State<AccountScreen> {
   Widget _signedOut(ConsumerController account) {
     if (mode == AccountMode.welcome) {
       final google =
-          account.googleAvailable && AppConfig.googleWebClientId.isNotEmpty;
+          account.googleAvailable && account.socialAuth.googleConfigured;
       final apple = account.appleAvailable &&
           (Theme.of(context).platform == TargetPlatform.iOS ||
-              (AppConfig.appleServiceId.isNotEmpty &&
-                  AppConfig.appleRedirectUri.isNotEmpty));
+              account.socialAuth.appleConfigured);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -496,13 +495,12 @@ class _AccountScreenState extends State<AccountScreen> {
         account.linkedAccounts.map((item) => item.providerId).toSet();
     final hasCredential = providerIds.contains('credential');
     final canGoogle = account.googleAvailable &&
-        AppConfig.googleWebClientId.isNotEmpty &&
+        account.socialAuth.googleConfigured &&
         !providerIds.contains('google');
     final canApple = account.appleAvailable &&
         !providerIds.contains('apple') &&
         (Theme.of(context).platform == TargetPlatform.iOS ||
-            (AppConfig.appleServiceId.isNotEmpty &&
-                AppConfig.appleRedirectUri.isNotEmpty));
+            account.socialAuth.appleConfigured);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

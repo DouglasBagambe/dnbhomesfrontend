@@ -20,7 +20,7 @@ flutter build appbundle --release --flavor production --dart-define=HOMES_ENV=pr
 
 For an Android emulator, use the development URL above. Forward the API port with `adb reverse tcp:3000 tcp:3000` so local demo media URLs (`localhost:3000`) also resolve on the device. For a USB device, use the same forwarding command and `HOMES_API_URL=http://127.0.0.1:3000/api/v1`.
 
-Production API URLs, Sentry DSNs, and PostHog keys must be supplied using `--dart-define`; none are committed.
+The app defaults to `https://homes-api.nilebitlabs.com/api/v1`. To use this hosted backend on a phone or emulator, run `flutter run --flavor development`. Use the explicit local URL above only when developing against a local backend. `HOMES_API_URL` can override the default using `--dart-define`; production builds still require it explicitly. Sentry DSNs and PostHog keys must also be supplied using `--dart-define`.
 
 Validate with `dart format --output=none --set-exit-if-changed lib test`, `flutter analyze`, `flutter test`, a development `flutter build apk`, and the production `flutter build appbundle` command. A production bundle without a real upload keystore is only a build-validation artifact. Android pins DataStore 1.2.1 because the preferences dependency graph previously bundled a native counter with misaligned 16 KB RELRO segments. Check 64-bit native LOAD/RELRO alignment and APK ZIP alignment before release.
 
@@ -37,7 +37,7 @@ Optional Sentry/PostHog configuration boundaries exist in `lib/core/telemetry`. 
 
 ## Production release gate
 
-Douglas must supply the actual `HOMES_API_URL` (public HTTPS `/api/v1` root); no API hostname is assumed. Production Gradle tasks require `HOMES_ENV=production` and reject omitted/localhost/reserved example/invalid hosts. Normal production release builds also require valid signing configuration. Dart startup independently checks the flavor/environment and endpoint and refuses unknown environments. The legacy `.env` file is no longer bundled; use dart defines and never put secrets into the consumer app.
+For production builds, explicitly supply `HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1` (or the current public HTTPS `/api/v1` root). Production Gradle tasks require `HOMES_ENV=production` and reject omitted/localhost/reserved example/invalid hosts. Normal production release builds also require valid signing configuration. Dart startup independently checks the flavor/environment and endpoint and refuses unknown environments. The legacy `.env` file is no longer bundled; use dart defines and never put secrets into the consumer app. API addresses are compiled into each APK: changing `.env` or updating the backend does not change an already installed app. Rebuild and install the new APK after changing `HOMES_API_URL`; the custom API hostname is used to avoid the Render-hostname DNS failures observed on Wi-Fi.
 
 To validate native release compilation without real production inputs or a keystore:
 
@@ -65,7 +65,7 @@ phone. To build the installable debug APK against the current preview API:
 ```sh
 flutter build apk --debug --flavor staging \
   --dart-define=HOMES_ENV=staging \
-  --dart-define=HOMES_API_URL=https://dnbhomesbackend.onrender.com/api/v1
+  --dart-define=HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1
 ```
 
 Output: `build/app/outputs/flutter-apk/app-staging-debug.apk`. This debug artifact
@@ -153,7 +153,7 @@ keytool -genkeypair -v -keystore "$HOME/.local/share/homes-signing/homes-upload.
 Create ignored `android/key.properties` with `storeFile` (absolute keystore path), `storePassword`, `keyAlias=homes-upload`, and `keyPassword`; set its mode to 600 and keep an encrypted backup of the keystore/password. Never commit either file. Choose the next unused Play build number. With real public endpoints and signing configured:
 
 ```bash
-export HOMES_API_URL=https://YOUR_REAL_API_HOST/api/v1
+export HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1
 export HOMES_WEBSITE_URL=https://YOUR_CANONICAL_WEBSITE_HOST
 export HOMES_LINK_HOST=YOUR_CANONICAL_WEBSITE_HOST
 unset HOMES_BUILD_PROFILE
@@ -181,9 +181,8 @@ rather than a manual redraw. Timings, cubic curves, word transform, gap overlays
 settle origin and colors match the approved HTML. `disableAnimations` displays
 the completed composition with a 150ms opacity fade, without stroke drawing.
 
-The native launch bridge uses matching white / #1f1e20 backgrounds without the
-previous duplicate bitmap logo on Android before 12 and iOS. Android 12+ requires
-an OS-managed static launch icon before Flutter can render; this remains the
-existing app icon. The approved vector animation starts at Flutter's first
-frame. Native dark-mode resolution uses the OS theme until saved app preferences
-can be restored. No native animation or substitute wordmark is introduced.
+The native launch bridge uses plain white / #1f1e20 backgrounds while Flutter
+starts. Android 12+ uses a transparent launch icon so no static logo precedes the
+animated signature loader. The animation starts at Flutter's first frame.
+Native dark-mode resolution uses the OS theme until saved app preferences can
+be restored. Rebuild the APK for native launch changes; hot reload is insufficient.

@@ -7,7 +7,7 @@ import '../../compare/compare_controller.dart';
 import '../../favorites/favorites_controller.dart';
 import '../domain/property.dart';
 
-enum PropertyCardLayout { vertical, horizontal, compact }
+enum PropertyCardLayout { vertical, horizontal, compact, grid }
 
 class PropertyCard extends StatelessWidget {
   const PropertyCard({
@@ -30,7 +30,9 @@ class PropertyCard extends StatelessWidget {
         : LayoutBuilder(
             builder: (context, constraints) => _image(
                 context, constraints.maxWidth, constraints.maxWidth * .75));
-    final details = _details(context);
+    final details = layout == PropertyCardLayout.grid
+        ? _gridDetails(context)
+        : _details(context);
     final card = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -119,6 +121,58 @@ class PropertyCard extends StatelessWidget {
                           fontWeight: FontWeight.w600)))),
         ],
       );
+  Widget _gridDetails(BuildContext context) => Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+                formatMoney(PropertyPrice(
+                    amount: property.price.amount,
+                    currency: property.price.currency,
+                    period: 'total')),
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700))),
+        Text(
+            property.price.period == 'total'
+                ? 'Total price'
+                : 'per ${property.price.period}',
+            style: Theme.of(context).textTheme.labelSmall),
+        const SizedBox(height: 8),
+        _textSlot(context, property.title,
+            lines: 2,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Text(property.location.shortLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 7),
+        Text(
+            [
+              if ((property.bedrooms ?? 0) > 0) '${property.bedrooms} bd',
+              if ((property.bathrooms ?? 0) > 0) '${property.bathrooms} ba',
+              if (property.size != null)
+                '${property.size!.round()} ${property.sizeUnit}'
+            ].join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall),
+        if (property.availabilityLabel != null)
+          Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(property.availabilityLabel!,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(fontWeight: FontWeight.w700))),
+      ]));
   Widget _placeholder(BuildContext context) => ColoredBox(
         color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: Center(
@@ -141,6 +195,9 @@ class PropertyCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (property.availabilityLabel != null)
+            Text(property.availabilityLabel!,
+                style: Theme.of(context).textTheme.labelMedium),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -69,12 +69,13 @@ class _SearchScreenState extends State<SearchScreen> {
           );
       if (!mounted || controller.text.trim() != term) return;
       await historyStore.add(term);
+      if (!mounted || controller.text.trim() != term) return;
       setState(() {
         results = page.items;
         loading = false;
       });
     } on ApiFailure catch (error) {
-      if (mounted) {
+      if (mounted && controller.text.trim() == term) {
         setState(() {
           failure = error;
           loading = false;
@@ -114,7 +115,7 @@ class _SearchScreenState extends State<SearchScreen> {
       );
 
   Widget _body() {
-    if (loading) return const Center(child: CircularProgressIndicator());
+    if (loading) return const PropertyListSkeleton();
     if (failure != null) {
       return AppErrorState(
         message: failure!.message,
@@ -131,9 +132,38 @@ class _SearchScreenState extends State<SearchScreen> {
       }
       return ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-        itemCount: results.length + 1,
+        itemCount: results.length + 2,
         separatorBuilder: (_, __) => const SizedBox(height: 12),
         itemBuilder: (_, index) {
+          if (index == 0) {
+            final places = <String, Property>{};
+            for (final property in results) {
+              if (property.location.shortLabel.isNotEmpty) {
+                places.putIfAbsent(
+                    property.location.shortLabel, () => property);
+              }
+            }
+            return Wrap(spacing: 8, runSpacing: 4, children: [
+              for (final place in places.values.take(4))
+                ActionChip(
+                  avatar: const Icon(Icons.location_on_outlined, size: 17),
+                  label: Text(place.location.shortLabel),
+                  onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DiscoverScreen(
+                            initialQuery: ListingQuery(
+                                area: place.location.area.isEmpty
+                                    ? null
+                                    : place.location.area,
+                                district: place.location.district.isEmpty
+                                    ? null
+                                    : place.location.district)),
+                      )),
+                ),
+            ]);
+          }
+          index--;
           if (index == results.length) {
             return TextButton(
               onPressed: () => discover(controller.text),

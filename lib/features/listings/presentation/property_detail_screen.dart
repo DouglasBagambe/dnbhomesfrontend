@@ -5,7 +5,7 @@ import 'media_gallery.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/open_external.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/theme/tokens.dart';
@@ -55,18 +55,27 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     try {
       final repo = context.read<ListingsRepository>();
       final detail = await repo.get(widget.idOrSlug);
-      if (mounted) context.read<ConsumerController?>()?.recordRecent(detail.id);
-      final related = await repo.list(ListingQuery(
-        type: detail.type,
-        area: detail.location.area.isEmpty ? null : detail.location.area,
-        limit: 6,
-      ));
       if (!mounted) return;
+      context.read<ConsumerController?>()?.recordRecent(detail.id);
       setState(() {
         property = detail;
-        similar = related.items.where((item) => item.id != detail.id).toList();
         loading = false;
       });
+      // Related recommendations must never hide a fresh availability response.
+      try {
+        final related = await repo.list(ListingQuery(
+          type: detail.type,
+          area: detail.location.area.isEmpty ? null : detail.location.area,
+          limit: 6,
+        ));
+        if (mounted)
+          setState(() {
+            similar =
+                related.items.where((item) => item.id != detail.id).toList();
+          });
+      } on ApiFailure catch (_) {
+        // The property itself remains usable when recommendations fail.
+      }
     } on ApiFailure catch (error) {
       if (mounted) {
         setState(() {
@@ -77,12 +86,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  Future<void> open(String value) async {
-    final uri = Uri.parse(value);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+  Future<void> open(String value) => openExternal(context, Uri.parse(value));
 
   Future<void> share(Property item) async {
     final box = context.findRenderObject() as RenderBox?;
@@ -107,7 +111,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   Widget build(BuildContext context) {
     final item = property;
     if (item == null && loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: PropertyDetailSkeleton());
     }
     if (item == null) {
       return Scaffold(
@@ -126,12 +130,19 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
               child: FilledButton.icon(
-                onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => ViewingRequestScreen(property: item))),
+                onPressed: item.canRequestViewing && failure?.statusCode != 404
+                    ? () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) =>
+                                ViewingRequestScreen(property: item)))
+                    : null,
                 icon: const Icon(Icons.calendar_month_outlined),
-                label: const Text('Request a viewing'),
+                label: Text(failure?.statusCode == 404
+                    ? 'Property unavailable'
+                    : item.canRequestViewing
+                        ? 'Request a viewing'
+                        : '${item.availabilityLabel ?? 'Unavailable'} · viewings closed'),
               ))),
       body: CustomScrollView(
         slivers: [
@@ -175,6 +186,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                           ?.copyWith(
                               color: Theme.of(context).colorScheme.primary)),
                   const SizedBox(height: 16),
+                  if (item.availabilityLabel != null)
+                    Chip(label: Text(item.availabilityLabel!)),
                   Text(item.title,
                       style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 8),

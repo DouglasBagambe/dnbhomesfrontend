@@ -135,6 +135,7 @@ class Property {
     required this.verificationStatus,
     required this.status,
     this.publishedAt,
+    this.availabilityStatus,
     required this.viewCount,
   });
   final String id,
@@ -158,6 +159,21 @@ class Property {
   final bool featured;
   final DateTime? publishedAt;
   final int viewCount;
+  final String? availabilityStatus;
+  String? get availabilityLabel => switch (availabilityStatus) {
+        null || '' => null,
+        'available' => 'Available',
+        'reserved' => 'Reserved',
+        'rented' => 'Rented',
+        'sold' => 'Sold',
+        _ => 'Unavailable',
+      };
+  bool get canRequestViewing =>
+      !['archived', 'draft', 'pending_review'].contains(status) &&
+      (availabilityStatus == null ||
+          availabilityStatus == '' ||
+          availabilityStatus == 'available');
+
   bool get verified => verificationStatus == 'verified';
   String? get imageUrl => cover?.url.isNotEmpty == true
       ? cover!.url
@@ -203,6 +219,7 @@ class Property {
       status: j['status'] as String? ?? '',
       publishedAt: DateTime.tryParse(j['publishedAt'] as String? ?? ''),
       viewCount: (j['viewCount'] as num?)?.toInt() ?? 0,
+      availabilityStatus: j['availabilityStatus'] as String?,
     );
   }
 }

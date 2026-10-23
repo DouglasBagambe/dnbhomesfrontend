@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../bookings/presentation/bookings_screen.dart';
+import '../accounts/account_hub.dart';
 import '../compare/compare_controller.dart';
 import '../compare/presentation/compare_screen.dart';
 import '../discover/presentation/discover_screen.dart';
@@ -20,7 +20,7 @@ class _AppShellState extends State<AppShell> {
     HomeScreen(),
     DiscoverScreen(),
     FavoritesScreen(),
-    BookingsScreen(),
+    AccountHub(),
   ];
   @override
   Widget build(BuildContext context) {
@@ -31,7 +31,9 @@ class _AppShellState extends State<AppShell> {
           visited.contains(i)
               ? i == 1
                   ? DiscoverScreen(active: index == 1)
-                  : pages[i]
+                  : i == 0
+                      ? HomeScreen(active: index == 0)
+                      : pages[i]
               : const SizedBox.shrink(),
       ]),
       bottomNavigationBar: NavigationBar(
@@ -57,9 +59,9 @@ class _AppShellState extends State<AppShell> {
             label: 'Saved',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Viewings',
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Account',
           ),
         ],
       ),

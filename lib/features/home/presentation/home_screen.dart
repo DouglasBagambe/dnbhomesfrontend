@@ -1,3 +1,4 @@
+import '../../../core/widgets/brand_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -11,10 +12,14 @@ import '../../listings/domain/property.dart';
 import '../../listings/presentation/property_carousel.dart';
 import '../../listings/presentation/property_detail_screen.dart';
 import '../../search/presentation/search_screen.dart';
-import '../../settings/presentation/settings_screen.dart';
+import '../../tours/tours_screen.dart';
+import '../../accounts/consumer_controller.dart';
+import '../../accounts/recent_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.active = true});
+  final bool active;
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -22,7 +27,37 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   bool loading = true;
   ApiFailure? failure;
-  List<Property> featured = [], recommended = [], latest = [];
+  List<Property> featured = [], recommended = [], latest = [], recent = [];
+  int recentEpoch = 0;
+  List<String> recentIds = [];
+  @override
+  void didUpdateWidget(covariant HomeScreen old) {
+    super.didUpdateWidget(old);
+    if (widget.active && !old.active) loadRecent();
+  }
+
+  Future<void> loadRecent() async {
+    final epoch = ++recentEpoch;
+    final account = context.read<ConsumerController>();
+    final repo = context.read<ListingsRepository>();
+    final prefs = await SharedPreferences.getInstance();
+    final ids = account.signedIn
+        ? account.recent
+        : prefs.getStringList('homes_guest_recent') ?? <String>[];
+    final values = await Future.wait(ids.take(6).map((id) async {
+      try {
+        return await repo.get(id);
+      } catch (_) {
+        return null;
+      }
+    }));
+    if (mounted && epoch == recentEpoch)
+      setState(() {
+        recentIds = List.of(ids);
+        recent = values.whereType<Property>().toList();
+      });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -52,6 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
         latest = results[2].items;
         loading = false;
       });
+      await loadRecent();
     } on ApiFailure catch (error) {
       if (mounted)
         setState(() {
@@ -61,15 +97,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void open(Property item) => Navigator.push(
-      context,
-      MaterialPageRoute(
-          builder: (_) => PropertyDetailScreen(
-              idOrSlug: item.slug.isEmpty ? item.id : item.slug,
-              initial: item)));
+  void open(Property item) async {
+    await Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => PropertyDetailScreen(
+                idOrSlug: item.slug.isEmpty ? item.id : item.slug,
+                initial: item)));
+    if (mounted) loadRecent();
+  }
+
   @override
   Widget build(BuildContext context) => SafeArea(
-      child: RefreshIndicator(
+      child: BrandRefreshIndicator(
           onRefresh: () => load(refresh: true),
           child: CustomScrollView(slivers: [
             SliverToBoxAdapter(child: _topBar()),
@@ -111,20 +151,23 @@ class _HomeScreenState extends State<HomeScreen> {
             ])),
         const Spacer(),
         IconButton(
-            tooltip: 'Settings',
+            tooltip: 'Open Tours',
             onPressed: () => Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen())),
-            icon: const Icon(Icons.tune))
+                MaterialPageRoute(builder: (_) => const ToursScreen())),
+            icon: const Icon(Icons.video_library_outlined))
       ]));
   List<Widget> _content() {
     final hero = featured.isNotEmpty ? featured : latest;
-    final locations = <String, int>{};
-    for (final item in latest) {
-      final label = item.location.area.isNotEmpty
-          ? item.location.area
-          : item.location.district;
-      if (label.isNotEmpty) locations[label] = (locations[label] ?? 0) + 1;
+    final locations = <String, Property>{};
+    for (final item in [...latest, ...recommended, ...featured]) {
+      final key = '${item.location.area}|${item.location.district}';
+      if (item.location.shortLabel.isNotEmpty)
+        locations.putIfAbsent(key, () => item);
     }
+    final shown = featured.map((p) => p.id).toSet();
+    final popular = recommended.where((p) => !shown.contains(p.id)).toList();
+    shown.addAll(popular.map((p) => p.id));
+    final fresh = latest.where((p) => !shown.contains(p.id)).toList();
     return [
       SliverToBoxAdapter(
           child: _Hero(items: hero.take(5).toList(), onTap: open)),
@@ -138,25 +181,71 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (_) => DiscoverScreen(initialQuery: query))))),
-      if (featured.isNotEmpty) _section('Featured homes', featured),
-      if (recommended.isNotEmpty)
-        _section('Popular right now', recommended,
-            subtitle: 'Verified listings to explore'),
+      if (featured.isNotEmpty)
+        _section('Featured homes', featured,
+            query: const ListingQuery(featured: true)),
+      if (popular.isNotEmpty)
+        _section('Popular right now', popular,
+            subtitle: 'Verified listings to explore',
+            query:
+                const ListingQuery(verified: true, sort: ListingSort.popular)),
       if (locations.isNotEmpty)
         SliverToBoxAdapter(
             child: _Locations(
-                items: locations.keys.take(6).toList(),
-                onTap: (area) => Navigator.push(
+                items: locations.values.take(8).toList(),
+                onTap: (place) => Navigator.push(
                     context,
                     MaterialPageRoute(
                         builder: (_) => DiscoverScreen(
-                            initialQuery: ListingQuery(area: area)))))),
-      if (latest.isNotEmpty) _section('Fresh on Homes', latest),
+                            initialQuery: ListingQuery(
+                                area: place.location.area.isEmpty
+                                    ? null
+                                    : place.location.area,
+                                district: place.location.district.isEmpty
+                                    ? null
+                                    : place.location.district)))))),
+      if (recent.isNotEmpty)
+        _section('Recently viewed', recent,
+            onSeeAll: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => RecentHomesScreen(ids: recentIds)))),
+      if (fresh.isNotEmpty)
+        _section('Fresh on Homes', fresh,
+            query: const ListingQuery(sort: ListingSort.newest)),
+      SliverToBoxAdapter(
+          child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 30, 20, 8),
+              child: Card(
+                  child: Padding(
+                      padding: const EdgeInsets.all(22),
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.video_library_outlined),
+                            const SizedBox(height: 12),
+                            Text('Step inside with Tours',
+                                style: Theme.of(context).textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            const Text(
+                                'Walk through properties on video, then explore the details at your own pace.'),
+                            const SizedBox(height: 12),
+                            TextButton.icon(
+                                onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const ToursScreen())),
+                                icon: const Icon(Icons.play_arrow_rounded),
+                                label: const Text('Explore Tours'))
+                          ]))))),
       const SliverPadding(padding: EdgeInsets.only(bottom: 110))
     ];
   }
 
-  Widget _section(String title, List<Property> items, {String? subtitle}) =>
+  Widget _section(String title, List<Property> items,
+          {String? subtitle,
+          ListingQuery query = const ListingQuery(),
+          VoidCallback? onSeeAll}) =>
       SliverToBoxAdapter(
           child: Padding(
               padding: const EdgeInsets.only(top: 28),
@@ -191,11 +280,12 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           .onSurfaceVariant)))
                                   ])),
                               TextButton(
-                                  onPressed: () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (_) =>
-                                              const DiscoverScreen())),
+                                  onPressed: onSeeAll ??
+                                      () => Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) => DiscoverScreen(
+                                                  initialQuery: query))),
                                   child: const Text('See all'))
                             ])),
                     const SizedBox(height: 12),
@@ -383,51 +473,173 @@ class _Browse extends StatelessWidget {
         const ListingQuery(type: 'commercial')
       ),
     ];
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final labelStyle = theme.textTheme.labelMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      fontFamily: 'Roboto',
+      letterSpacing: 0,
+      color: colors.onSurface,
+    );
+    // Keep the five destinations on one rail, with room to scroll on compact
+    // screens or when larger accessibility text needs wider touch targets.
+    final textPainter = TextPainter(
+      text: TextSpan(text: 'Commercial', style: labelStyle),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final minimumWidth = (textPainter.width + 4).clamp(64.0, double.infinity);
+    textPainter.dispose();
     return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Browse by type',
-              style: Theme.of(context).textTheme.headlineSmall),
+      padding: const EdgeInsets.only(top: 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text('Browse by type', style: theme.textTheme.headlineSmall),
+          ),
           const SizedBox(height: 16),
-          Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: items
-                  .map((item) => TextButton.icon(
-                        onPressed: () => onSelect(item.$3),
-                        icon: Icon(item.$2, size: 20),
-                        label: Text(item.$1),
-                        style: TextButton.styleFrom(
-                            minimumSize: const Size(48, 52),
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12))),
-                      ))
-                  .toList()),
-        ]));
+          LayoutBuilder(builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth - 40;
+            final itemWidth = ((availableWidth - 16) / items.length)
+                .clamp(minimumWidth, double.infinity);
+            return SingleChildScrollView(
+              key: const ValueKey('browse-type-rail'),
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var index = 0; index < items.length; index++) ...[
+                    if (index > 0) const SizedBox(width: 4),
+                    SizedBox(
+                      width: itemWidth,
+                      child: Semantics(
+                        button: true,
+                        label: items[index].$1,
+                        onTap: () => onSelect(items[index].$3),
+                        child: ExcludeSemantics(
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => onSelect(items[index].$3),
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: colors.primary
+                                            .withValues(alpha: .06),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: colors.primary
+                                              .withValues(alpha: .10),
+                                        ),
+                                      ),
+                                      child: Icon(items[index].$2,
+                                          size: 24, color: colors.primary),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Text(items[index].$1,
+                                        maxLines: 1,
+                                        softWrap: false,
+                                        style: labelStyle),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
   }
 }
 
 class _Locations extends StatelessWidget {
   const _Locations({required this.items, required this.onTap});
-  final List<String> items;
-  final ValueChanged<String> onTap;
+  final List<Property> items;
+  final ValueChanged<Property> onTap;
   @override
   Widget build(BuildContext context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+      padding: const EdgeInsets.only(top: 30),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Explore locations',
-            style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        ...items.map((item) => ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.location_on_outlined),
-            title: Text(item),
-            trailing: const Icon(Icons.arrow_forward, size: 20),
-            onTap: () => onTap(item))),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text('Find your neighbourhood',
+                style: Theme.of(context).textTheme.headlineSmall)),
+        const SizedBox(height: 6),
+        const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text('Explore the places you could call home.')),
+        const SizedBox(height: 14),
+        SizedBox(
+            height:
+                116 * MediaQuery.textScalerOf(context).scale(1).clamp(1, 1.8),
+            child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (_, i) {
+                  final place = items[i].location;
+                  return SizedBox(
+                      width: 184,
+                      child: Card(
+                          child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => onTap(items[i]),
+                              child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(children: [
+                                          const Icon(Icons.location_on_outlined,
+                                              size: 20),
+                                          const Spacer(),
+                                          Icon(Icons.north_east,
+                                              size: 18,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant)
+                                        ]),
+                                        const Spacer(),
+                                        Text(
+                                            place.area.isEmpty
+                                                ? place.district
+                                                : place.area,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium),
+                                        if (place.area.isNotEmpty &&
+                                            place.district.isNotEmpty)
+                                          Text(place.district,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall),
+                                      ])))));
+                })),
       ]));
 }
 

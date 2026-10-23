@@ -165,7 +165,9 @@ class _SwipeDiscoveryState extends State<SwipeDiscovery> {
                   '${property.bathrooms} baths',
                 if (property.size != null)
                   '${property.size!.round()} ${property.sizeUnit}',
-                if (property.verified) 'Verified'
+                if (property.verified) 'Verified',
+                if (property.availabilityLabel != null)
+                  property.availabilityLabel!
               ].join(' · '),
               style: theme.textTheme.labelSmall),
         ])));
@@ -238,9 +240,12 @@ class _SwipeDiscoveryState extends State<SwipeDiscovery> {
             const SizedBox(width: 8),
             Expanded(
                 child: FilledButton(
-                    onPressed: () =>
-                        open(ViewingRequestScreen(property: property)),
-                    child: const Text('Request viewing')))
+                    onPressed: property.canRequestViewing
+                        ? () => open(ViewingRequestScreen(property: property))
+                        : null,
+                    child: Text(property.canRequestViewing
+                        ? 'Request viewing'
+                        : property.availabilityLabel ?? 'Unavailable')))
           ]),
           const SizedBox(height: 6),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [

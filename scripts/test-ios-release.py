@@ -64,4 +64,11 @@ class IOSReleaseTests(unittest.TestCase):
             self.assertEqual(launch.findall('.//bitmap'), [])
             self.assertEqual(launch.find('item').get('{http://schemas.android.com/apk/res/android}drawable'), '@color/homes_launch_background')
 
+        for folder in ['values-v31', 'values-night-v31']:
+            styles = ET.parse(repo / f'android/app/src/main/res/{folder}/styles.xml')
+            icon = styles.find('.//item[@name="android:windowSplashScreenAnimatedIcon"]')
+            self.assertEqual(icon.text, '@drawable/launch_empty_icon')
+        icon = ET.parse(repo / 'android/app/src/main/res/drawable/launch_empty_icon.xml')
+        self.assertEqual(icon.find('path').get('{http://schemas.android.com/apk/res/android}fillColor'), '#00000000')
+
 if __name__ == '__main__': unittest.main()

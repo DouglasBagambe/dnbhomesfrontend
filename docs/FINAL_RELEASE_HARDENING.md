@@ -11,8 +11,8 @@ Discover explicit/pull refresh bypasses the existing 30-second cache. Detail ref
 Staging sideload builds display Homes and use the public HTTPS preview API, requiring neither USB nor shared Wi-Fi:
 
 ```sh
-flutter build apk --debug --flavor staging --dart-define=HOMES_ENV=staging --dart-define=HOMES_API_URL=https://dnbhomesbackend.onrender.com/api/v1
-flutter build apk --profile --flavor staging --dart-define=HOMES_ENV=staging --dart-define=HOMES_API_URL=https://dnbhomesbackend.onrender.com/api/v1
+flutter build apk --debug --flavor staging --dart-define=HOMES_ENV=staging --dart-define=HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1
+flutter build apk --profile --flavor staging --dart-define=HOMES_ENV=staging --dart-define=HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1
 ```
 
 Use profile for realistic optimized phone testing. Both are staging test artifacts, not signed production Play releases. Keep signing, HTTPS and production environment guards intact. Development emulator QA may use a disposable local API but uses the same owned HTTPS QA media; native cleartext protection is not weakened.

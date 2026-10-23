@@ -11,7 +11,7 @@ class AppConfig {
   );
   static const String apiBaseUrl = String.fromEnvironment(
     'HOMES_API_URL',
-    defaultValue: 'http://10.0.2.2:3000/api/v1',
+    defaultValue: 'https://homes-api.nilebitlabs.com/api/v1',
   );
   static const String websiteUrl = String.fromEnvironment(
     'HOMES_WEBSITE_URL',
@@ -94,7 +94,10 @@ class AppConfig {
     } else if (uri.scheme != 'http' && uri.scheme != 'https') {
       throw StateError('Invalid development API scheme');
     }
-    if (environmentName == 'production') {
+    // Android obtains public provider IDs from the authenticated API origin's
+    // capabilities endpoint. iOS still needs native URL-scheme configuration.
+    if (environmentName == 'production' &&
+        defaultTargetPlatform == TargetPlatform.iOS) {
       if (googleWebClientId.isEmpty) {
         throw StateError('Production requires HOMES_GOOGLE_WEB_CLIENT_ID');
       }

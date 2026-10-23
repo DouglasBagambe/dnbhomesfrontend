@@ -1,3 +1,4 @@
+import '../../../core/widgets/brand_loading.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/network/api_client.dart';
@@ -139,7 +140,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
           body: SafeArea(
-        child: RefreshIndicator(
+        child: BrandRefreshIndicator(
             onRefresh: () => swipe ? Future.value() : load(refresh: true),
             child: CustomScrollView(
               physics: swipe
@@ -324,19 +325,22 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
                     sliver:
                         SliverLayoutBuilder(builder: (context, constraints) {
-                      final columns = constraints.crossAxisExtent >= 720
-                          ? 3
-                          : constraints.crossAxisExtent >= 520
-                              ? 2
-                              : 1;
+                      final columns =
+                          MediaQuery.textScalerOf(context).scale(14) > 21 ||
+                                  constraints.crossAxisExtent < 300
+                              ? 1
+                              : constraints.crossAxisExtent >= 900
+                                  ? 3
+                                  : constraints.crossAxisExtent >= 300
+                                      ? 2
+                                      : 1;
                       final rows = (items.length / columns).ceil();
                       return SliverList.separated(
                         itemCount: rows + (loadingMore ? 1 : 0),
-                        separatorBuilder: (_, __) => const SizedBox(height: 24),
+                        separatorBuilder: (_, __) => const SizedBox(height: 14),
                         itemBuilder: (context, row) {
                           if (row == rows) {
-                            return const Center(
-                                child: CircularProgressIndicator());
+                            return const Center(child: BrandLoading());
                           }
                           return Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -399,11 +403,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Widget _card(BuildContext context, int i) {
     if (i == items.length) {
-      return const Center(child: CircularProgressIndicator());
+      return const PropertyListSkeleton(columns: 2);
     }
     final item = items[i];
     return PropertyCard(
       property: item,
+      layout: PropertyCardLayout.grid,
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(

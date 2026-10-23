@@ -1,6 +1,8 @@
 import '../../../core/config/app_config.dart';
+import 'package:provider/provider.dart';
+import '../../accounts/consumer_controller.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/open_external.dart';
 
 enum ContentType { help, safety, contact, privacy, terms, about }
 
@@ -9,6 +11,10 @@ class SimpleContentScreen extends StatelessWidget {
   final ContentType type;
   @override
   Widget build(BuildContext context) {
+    final support = context.watch<ConsumerController?>()?.runtime;
+    final email = support?.supportEmail ?? '';
+    final phone = support?.supportPhone ?? '';
+    final whatsapp = support?.supportWhatsapp ?? '';
     final (title, content) = switch (type) {
       ContentType.help => (
           'Help',
@@ -20,7 +26,9 @@ class SimpleContentScreen extends StatelessWidget {
         ),
       ContentType.contact => (
           'Contact',
-          'For product support, contact dnb Homes at dnbtechnologies@gmail.com.',
+          email.isNotEmpty
+              ? 'For product support, contact dnb Homes at $email.'
+              : 'Find support and current contact details on the Homes website.',
         ),
       ContentType.privacy => (
           'Privacy policy',
@@ -41,16 +49,42 @@ class SimpleContentScreen extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Text(content, style: Theme.of(context).textTheme.bodyLarge),
-          if (type == ContentType.contact)
+          if (type == ContentType.contact && email.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 24),
               child: FilledButton.icon(
                 onPressed: () =>
-                    launchUrl(Uri.parse('mailto:dnbtechnologies@gmail.com')),
+                    openExternal(context, Uri(scheme: 'mailto', path: email)),
                 icon: const Icon(Icons.email_outlined),
                 label: const Text('Email support'),
               ),
             ),
+          if (type == ContentType.contact && phone.isNotEmpty)
+            OutlinedButton.icon(
+                onPressed: () =>
+                    openExternal(context, Uri(scheme: 'tel', path: phone)),
+                icon: const Icon(Icons.phone_outlined),
+                label: const Text('Call support')),
+          if (type == ContentType.contact && whatsapp.isNotEmpty)
+            OutlinedButton.icon(
+                onPressed: () => openExternal(
+                    context, Uri.https('wa.me', '/${whatsapp.substring(1)}')),
+                icon: const Icon(Icons.chat_outlined),
+                label: const Text('WhatsApp support')),
+          if (type == ContentType.contact ||
+              type == ContentType.privacy ||
+              type == ContentType.terms)
+            Padding(
+                padding: const EdgeInsets.only(top: 20),
+                child: OutlinedButton.icon(
+                    onPressed: () => openExternal(
+                        context,
+                        Uri.parse(
+                            '${AppConfig.websiteUrl}/${type == ContentType.privacy ? 'privacy' : type == ContentType.terms ? 'terms' : 'contact'}')),
+                    icon: const Icon(Icons.open_in_new),
+                    label: Text(type == ContentType.contact
+                        ? 'Visit support website'
+                        : 'Read full policy'))),
         ],
       ),
     );

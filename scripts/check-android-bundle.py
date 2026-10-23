@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-import json, struct
+import argparse, json, struct
 from pathlib import Path
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--signed', action='store_true', help='Validate a real signed production bundle instead of an unsigned QA bundle')
+args = parser.parse_args()
 
 workspace = Path(__file__).resolve().parent.parent
 repo = workspace
@@ -35,7 +39,8 @@ assert not (permissions & forbidden_permissions), ('Unexpected sensitive permiss
 assert root.find('application').attrib.get(android + 'usesCleartextTraffic') != 'true'
 rows = []
 with ZipFile(aab) as archive:
-    assert not any(n.upper().endswith(('.RSA', '.DSA', '.EC', '.SF')) for n in archive.namelist()), 'Validation AAB should be unsigned.'
+    signed = any(n.upper().endswith(('.RSA', '.DSA', '.EC')) for n in archive.namelist())
+    assert signed == args.signed, 'Bundle signature presence does not match requested validation mode.'
     assert 'base/assets/flutter_assets/.env' not in archive.namelist(), 'Environment files must not be bundled.'
     for name in archive.namelist():
         if not name.startswith(('base/lib/arm64-v8a/', 'base/lib/x86_64/')) or not name.endswith('.so'):
@@ -72,5 +77,5 @@ with ZipFile(aab) as archive:
         rows.append({'library': name, 'loadAlignments': loads, 'relroEnds': relro, 'loadRanges': load_ranges})
 assert any('/arm64-v8a/libapp.so' in row['library'] for row in rows)
 assert any('/x86_64/libapp.so' in row['library'] for row in rows)
-(repo / 'build/android-bundle-check.json').write_text(json.dumps({'package': root.attrib['package'], 'targetApi': 36, 'unsigned': True, 'bytes': aab.stat().st_size, 'nativeLibraries': rows}, indent=2) + '\n')
-print(f'PASS: unsigned production AAB, API 36 manifest, no bundled environment file, {len(rows)} 64-bit libraries with 16 KB compatible LOAD/RELRO layout.')
+(repo / 'build/android-bundle-check.json').write_text(json.dumps({'package': root.attrib['package'], 'targetApi': 36, 'unsigned': not args.signed, 'bytes': aab.stat().st_size, 'nativeLibraries': rows}, indent=2) + '\n')
+print(f'PASS: {"signed" if args.signed else "unsigned"} production AAB, API 36 manifest, no bundled environment file, {len(rows)} 64-bit libraries with 16 KB compatible LOAD/RELRO layout.')

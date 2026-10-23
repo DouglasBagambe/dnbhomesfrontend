@@ -1,18 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../core/utils/open_external.dart';
 import '../../listings/domain/property.dart';
 
 class AgentCard extends StatelessWidget {
   const AgentCard({super.key, required this.agent, this.fallbackAgency});
   final Agent agent;
   final Agency? fallbackAgency;
-  Future<void> _open(String value) async {
-    final uri = Uri.parse(value);
-    if (await canLaunchUrl(uri))
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
   @override
   Widget build(BuildContext context) {
     final agency = agent.agency ?? fallbackAgency;
@@ -78,21 +72,25 @@ class AgentCard extends StatelessWidget {
               children: [
                 if (agent.phone?.isNotEmpty == true)
                   OutlinedButton.icon(
-                    onPressed: () => _open('tel:${agent.phone}'),
+                    onPressed: () => openExternal(
+                        context, Uri(scheme: 'tel', path: agent.phone)),
                     icon: const Icon(Icons.call_outlined),
                     label: const Text('Call'),
                   ),
                 if (agent.whatsapp?.isNotEmpty == true)
                   OutlinedButton.icon(
-                    onPressed: () => _open(
-                      'https://wa.me/${agent.whatsapp!.replaceAll(RegExp(r'\D'), '')}',
-                    ),
+                    onPressed: () => openExternal(
+                        context,
+                        Uri.parse(
+                          'https://wa.me/${agent.whatsapp!.replaceAll(RegExp(r'\D'), '')}',
+                        )),
                     icon: const Icon(Icons.chat_outlined),
                     label: const Text('WhatsApp'),
                   ),
                 if (agent.email?.isNotEmpty == true)
                   OutlinedButton.icon(
-                    onPressed: () => _open('mailto:${agent.email}'),
+                    onPressed: () => openExternal(
+                        context, Uri(scheme: 'mailto', path: agent.email)),
                     icon: const Icon(Icons.email_outlined),
                     label: const Text('Email'),
                   ),

@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/config/runtime_config.dart';
 import '../../core/network/api_client.dart';
 
 enum ConsumerSocialProvider { google, apple }
@@ -13,6 +14,19 @@ class ConsumerSocialAuth {
 
   final ApiClient api;
   bool _googleInitialized = false;
+  RuntimeConfig runtime = const RuntimeConfig();
+  String get googleClientId => runtime.googleWebClientId.isNotEmpty
+      ? runtime.googleWebClientId
+      : AppConfig.googleWebClientId;
+  String get appleClientId => runtime.appleServiceId.isNotEmpty
+      ? runtime.appleServiceId
+      : AppConfig.appleServiceId;
+  String get appleRedirect => runtime.appleServiceId.isNotEmpty
+      ? runtime.appleRedirectUri
+      : AppConfig.appleRedirectUri;
+  bool get googleConfigured => googleClientId.isNotEmpty;
+  bool get appleConfigured =>
+      Platform.isIOS || (appleClientId.isNotEmpty && appleRedirect.isNotEmpty);
 
   Future<void> signIn(ConsumerSocialProvider provider,
       {bool link = false}) async {
@@ -25,10 +39,10 @@ class ConsumerSocialAuth {
   }
 
   Future<void> _google({required bool link}) async {
-    if (AppConfig.googleWebClientId.isEmpty) {
+    if (googleClientId.isEmpty) {
       throw const ApiFailure(
         ApiFailureKind.validation,
-        'Google sign-in is not configured for this build.',
+        'Google sign-in is not available yet. Please use email sign-in.',
       );
     }
     final signIn = GoogleSignIn.instance;
@@ -37,7 +51,7 @@ class ConsumerSocialAuth {
         clientId: Platform.isIOS && AppConfig.googleIosClientId.isNotEmpty
             ? AppConfig.googleIosClientId
             : null,
-        serverClientId: AppConfig.googleWebClientId,
+        serverClientId: googleClientId,
       );
       _googleInitialized = true;
     }
@@ -85,12 +99,10 @@ class ConsumerSocialAuth {
       );
     }
     final isIos = Platform.isIOS;
-    if (!isIos &&
-        (AppConfig.appleServiceId.isEmpty ||
-            AppConfig.appleRedirectUri.isEmpty)) {
+    if (!isIos && (appleClientId.isEmpty || appleRedirect.isEmpty)) {
       throw const ApiFailure(
         ApiFailureKind.validation,
-        'Apple sign-in is not configured for this build.',
+        'Apple sign-in is not available yet. Please use email sign-in.',
       );
     }
     try {
@@ -102,8 +114,8 @@ class ConsumerSocialAuth {
         webAuthenticationOptions: isIos
             ? null
             : WebAuthenticationOptions(
-                clientId: AppConfig.appleServiceId,
-                redirectUri: Uri.parse(AppConfig.appleRedirectUri),
+                clientId: appleClientId,
+                redirectUri: Uri.parse(appleRedirect),
               ),
       );
       final token = credential.identityToken;

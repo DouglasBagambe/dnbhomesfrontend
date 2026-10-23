@@ -39,7 +39,7 @@ def main():
             raise RuntimeError('Source changed during parity build; rebuild both modes')
         run('flutter', 'build', 'apk', f'--{mode}', '--flavor', 'staging',
             '--target', 'lib/main.dart', '--dart-define=HOMES_ENV=staging',
-            '--dart-define=HOMES_API_URL=https://dnbhomesbackend.onrender.com/api/v1')
+            '--dart-define=HOMES_API_URL=https://homes-api.nilebitlabs.com/api/v1')
         apk = repo / 'build' / 'app' / 'outputs' / 'flutter-apk' / f'app-staging-{mode}.apk'
         payload = apk.read_bytes()
         preserved = output / f'Homes-{sha[:12]}-{mode}.apk'
@@ -50,7 +50,7 @@ def main():
     if fingerprint() != source:
         raise RuntimeError('Source changed during parity build; rebuild both modes')
     manifest = {'gitHead': sha, 'workingTreeDirty': dirty, 'sourceFingerprint': source, 'entrypoint': 'lib/main.dart',
-                'environment': 'staging', 'api': 'https://dnbhomesbackend.onrender.com/api/v1',
+                'environment': 'staging', 'api': 'https://homes-api.nilebitlabs.com/api/v1',
                 'artifacts': records, 'deviceParityVerified': False}
     (output / 'manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
     print(json.dumps(manifest, indent=2))
