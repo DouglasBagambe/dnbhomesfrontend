@@ -1,6 +1,7 @@
 import 'core/config/app_config.dart';
 import 'core/startup/startup_brand_loader.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'core/network/api_client.dart';
 import 'core/navigation_observer.dart';
@@ -46,15 +47,28 @@ class HomesApp extends StatelessWidget {
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: theme.mode,
-          builder: (context, child) => StartupBrandGate(
-            ready: Future.wait([
-              context.read<ThemeController>().ready,
-              context.read<FavoritesController>().ready,
-              context.read<CompareController>().ready,
-              context.read<BookingsController>().ready,
-            ]),
-            child: child ?? const SizedBox.shrink(),
-          ),
+          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
+              key: const ValueKey('app-system-bars'),
+              value: Theme.of(context).brightness == Brightness.dark
+                  ? SystemUiOverlayStyle.light.copyWith(
+                      statusBarColor: Colors.transparent,
+                      systemNavigationBarColor:
+                          Theme.of(context).scaffoldBackgroundColor,
+                      systemNavigationBarIconBrightness: Brightness.light)
+                  : SystemUiOverlayStyle.dark.copyWith(
+                      statusBarColor: Colors.transparent,
+                      systemNavigationBarColor:
+                          Theme.of(context).scaffoldBackgroundColor,
+                      systemNavigationBarIconBrightness: Brightness.dark),
+              child: StartupBrandGate(
+                ready: Future.wait([
+                  context.read<ThemeController>().ready,
+                  context.read<FavoritesController>().ready,
+                  context.read<CompareController>().ready,
+                  context.read<BookingsController>().ready,
+                ]),
+                child: child ?? const SizedBox.shrink(),
+              )),
           routes: {'/': (_) => const AppShell()},
           onGenerateRoute: _propertyRoute,
           onGenerateInitialRoutes: (initialRoute) {

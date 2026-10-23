@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:homes/app.dart';
 import 'package:homes/core/state/theme_controller.dart';
@@ -168,6 +169,19 @@ void main() {
           await ticks(tester);
           expect(players.active.length, 1);
           expect(players.maximumActive, 1);
+          // Closing immersive Tours must restore root status/navigation contrast.
+          await tester.tap(find.byTooltip('Close Tours'));
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          await ticks(tester);
+          expect(find.byType(ToursScreen), findsNothing);
+          final systemBars =
+              tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+                  find.byKey(const ValueKey('app-system-bars')));
+          expect(systemBars.value.statusBarIconBrightness,
+              dark ? Brightness.light : Brightness.dark);
+          expect(systemBars.value.systemNavigationBarIconBrightness,
+              dark ? Brightness.light : Brightness.dark);
           expect(tester.takeException(), isNull);
           await tester.pumpWidget(const SizedBox());
           await ticks(tester);
