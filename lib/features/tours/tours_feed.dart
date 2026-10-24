@@ -104,7 +104,7 @@ class ToursFeed extends ChangeNotifier {
       }
     } catch (_) {
       if (!disposed && epoch == _epoch)
-        error = 'Couldn’t load more tours. Check your connection and retry.';
+        error = 'Couldn’t load more reels. Check your connection and retry.';
     } finally {
       if (!disposed && epoch == _epoch) {
         busy = false;

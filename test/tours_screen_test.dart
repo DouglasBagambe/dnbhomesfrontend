@@ -83,7 +83,7 @@ void main() {
               }));
           await tester.pumpWidget(HomesApp(apiClient: api));
           await tester.pumpAndSettle();
-          await tester.tap(find.byTooltip('Open Tours'));
+          await tester.tap(find.byTooltip('Open Reels'));
           await tester.pump(const Duration(seconds: 1));
           await ticks(tester);
           expect(find.byType(ToursScreen), findsOneWidget);
@@ -170,7 +170,7 @@ void main() {
           expect(players.active.length, 1);
           expect(players.maximumActive, 1);
           // Closing immersive Tours must restore root status/navigation contrast.
-          await tester.tap(find.byTooltip('Close Tours'));
+          await tester.tap(find.byTooltip('Close Reels'));
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
           await ticks(tester);

@@ -151,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ])),
         const Spacer(),
         IconButton(
-            tooltip: 'Open Tours',
+            tooltip: 'Open Reels',
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ToursScreen())),
             icon: const Icon(Icons.video_library_outlined))
@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Icon(Icons.video_library_outlined),
                             const SizedBox(height: 12),
-                            Text('Step inside with Tours',
+                            Text('Watch property videos',
                                 style: Theme.of(context).textTheme.titleLarge),
                             const SizedBox(height: 8),
                             const Text(
@@ -236,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     MaterialPageRoute(
                                         builder: (_) => const ToursScreen())),
                                 icon: const Icon(Icons.play_arrow_rounded),
-                                label: const Text('Explore Tours'))
+                                label: const Text('Explore Reels'))
                           ]))))),
       const SliverPadding(padding: EdgeInsets.only(bottom: 110))
     ];

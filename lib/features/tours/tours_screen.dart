@@ -163,12 +163,12 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                                     const EdgeInsets.fromLTRB(8, 8, 12, 24),
                                 child: Row(children: [
                                   IconButton(
-                                      tooltip: 'Close Tours',
+                                      tooltip: 'Close Reels',
                                       onPressed: () =>
                                           Navigator.maybePop(context),
                                       icon: const Icon(Icons.arrow_back,
                                           color: Colors.white)),
-                                  const Text('Tours',
+                                  const Text('Reels',
                                       style: TextStyle(
                                           color: Colors.white,
                                           fontSize: 21,
@@ -197,7 +197,7 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                                                   side: BorderSide(color: Colors.white24))))),
                                   IconButton(
                                       tooltip:
-                                          muted ? 'Unmute tours' : 'Mute tours',
+                                          muted ? 'Unmute reels' : 'Mute reels',
                                       onPressed: () =>
                                           setState(() => muted = !muted),
                                       icon: Icon(
@@ -222,7 +222,7 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                     feed.busy
                         ? 'Finding your next place…'
                         : feed.error != null
-                            ? 'Tours couldn’t load'
+                            ? 'Reels couldn’t load'
                             : 'More places. A closer look.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
@@ -235,8 +235,8 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                         (feed.busy
                             ? 'Looking for property videos.'
                             : feed.location != null
-                                ? 'No video tours found here yet. Try another location.'
-                                : 'Property video tours will appear here when listings include videos.'),
+                                ? 'No property videos found here yet. Try another location.'
+                                : 'Property videos will appear here when listings include videos.'),
                     textAlign: TextAlign.center,
                     style: const TextStyle(color: Colors.white70, height: 1.5)),
                 if (!feed.busy) ...[
@@ -247,10 +247,10 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                           : () => feed.select(feed.location),
                       icon: const Icon(Icons.refresh),
                       label: Text(feed.error != null
-                          ? 'Retry tours'
+                          ? 'Retry reels'
                           : feed.hasMore
                               ? 'Continue searching'
-                              : 'Refresh tours')),
+                              : 'Refresh reels')),
                   if (feed.location != null)
                     TextButton(
                         onPressed: () => feed.select(null),
@@ -270,7 +270,7 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                 const SizedBox(height: 18),
                 Text(
                     feed.busy
-                        ? 'Loading more tours…'
+                        ? 'Loading more reels…'
                         : feed.error ??
                             (feed.hasMore
                                 ? 'Keep exploring'
@@ -281,7 +281,7 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                 if (!feed.busy && (feed.hasMore || feed.error != null))
                   OutlinedButton(
                       onPressed: feed.more,
-                      child: const Text('Load more tours')),
+                      child: const Text('Load more reels')),
                 TextButton(
                     onPressed: location, child: const Text('Change location')),
                 TextButton(
