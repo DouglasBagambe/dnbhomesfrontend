@@ -273,7 +273,7 @@ void main() {
     VideoPlayerPlatform.instance = players;
     await tester.pumpWidget(video());
     await ticks(tester);
-    await tester.tap(find.byTooltip('Pause tour'));
+    await tester.tap(find.byTooltip('Pause video'));
     await ticks(tester);
     expect(players.active, isEmpty);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
@@ -281,7 +281,7 @@ void main() {
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await ticks(tester);
     expect(players.active, isEmpty);
-    await tester.tap(find.byTooltip('Play tour'));
+    await tester.tap(find.byTooltip('Play video'));
     await ticks(tester);
     expect(players.active.length, 1);
     await tester.pumpWidget(const SizedBox());

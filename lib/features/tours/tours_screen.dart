@@ -288,7 +288,7 @@ class _ToursScreenState extends State<ToursScreen> with RouteAware {
                     onPressed: () => pages.animateToPage(0,
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOut),
-                    child: const Text('Back to first tour')),
+                    child: const Text('Back to first reel')),
               ]))));
   Widget _property(TourClip clip, int i) {
     final property = clip.property;

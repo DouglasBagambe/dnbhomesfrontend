@@ -183,7 +183,7 @@ class _TourVideoState extends State<TourVideo> with WidgetsBindingObserver {
                   icon: const Icon(Icons.refresh),
                   label: const Text('Retry video'),
                   style: TextButton.styleFrom(foregroundColor: Colors.white)),
-              const Text('Swipe up for another tour',
+              const Text('Swipe up for another reel',
                   style: TextStyle(color: Colors.white70)),
             ])));
     final backdrop = TourBackdrop(imageUrl: widget.backdropUrl);
@@ -214,7 +214,7 @@ class _TourVideoState extends State<TourVideo> with WidgetsBindingObserver {
                           opacity: paused ? 1 : 0,
                           duration: const Duration(milliseconds: 180),
                           child: IconButton(
-                              tooltip: paused ? 'Play tour' : 'Pause tour',
+                              tooltip: paused ? 'Play video' : 'Pause video',
                               iconSize: 52,
                               color: Colors.white,
                               style: IconButton.styleFrom(
@@ -230,7 +230,7 @@ class _TourVideoState extends State<TourVideo> with WidgetsBindingObserver {
                     right: 0,
                     child: Center(
                         child: BrandLoading(
-                            color: Colors.white, label: 'Buffering tour'))),
+                            color: Colors.white, label: 'Loading video'))),
               Positioned(
                   left: 20,
                   right: 20,
